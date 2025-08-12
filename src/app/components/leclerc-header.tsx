@@ -60,7 +60,7 @@ export function LeclercHeader({ onCartClick }: LeclercHeaderProps) {
             role="navigation"
             aria-label="Main navigation"
           >
-            <a
+            <Link
               href="/menu"
               className={`font-leclerc-support text-sm font-medium tracking-wide ${getThemeClass(
                 "header-nav-link"
@@ -68,8 +68,8 @@ export function LeclercHeader({ onCartClick }: LeclercHeaderProps) {
               aria-label="View menu"
             >
               Menu
-            </a>
-            <a
+            </Link>
+            <Link
               href="/locations"
               className={`font-leclerc-support text-sm font-medium tracking-wide ${getThemeClass(
                 "header-nav-link"
@@ -77,8 +77,8 @@ export function LeclercHeader({ onCartClick }: LeclercHeaderProps) {
               aria-label="View store locations"
             >
               Locations
-            </a>
-            <a
+            </Link>
+            <Link
               href="/#catering"
               className={`font-leclerc-support text-sm font-medium tracking-wide ${getThemeClass(
                 "header-nav-link"
@@ -86,8 +86,8 @@ export function LeclercHeader({ onCartClick }: LeclercHeaderProps) {
               aria-label="View catering options"
             >
               Catering
-            </a>
-            <a
+            </Link>
+            <Link
               href="/#about"
               className={`font-leclerc-support text-sm font-medium tracking-wide ${getThemeClass(
                 "header-nav-link"
@@ -95,7 +95,7 @@ export function LeclercHeader({ onCartClick }: LeclercHeaderProps) {
               aria-label="Learn about our story"
             >
               Our Story
-            </a>
+            </Link>
           </nav>
 
           {/* Actions */}
