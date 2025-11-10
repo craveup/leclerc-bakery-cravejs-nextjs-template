@@ -20,38 +20,6 @@ interface LeclercMenuProps {
   isHomePage?: boolean;
 }
 
-const getImagePath = (name: string, category?: string): string => {
-  const imageMap: Record<string, string> = {
-    "Classic Chocolate Chip":
-      "/images/leclerc-bakery/signature/choc-chip-walnut.webp",
-    "Double Dark Chocolate":
-      "/images/leclerc-bakery/signature/dark-choc-chip.webp",
-    "Oatmeal Raisin": "/images/leclerc-bakery/signature/oatmeal-raisin.webp",
-    "Peanut Butter Dream": "/images/leclerc-bakery/signature/pb-choc-chip.webp",
-    "Butter Croissant": "/images/leclerc-bakery/menu/butter-croissant.webp",
-    "Pain au Chocolat": "/images/leclerc-bakery/menu/pain-au-chocolat.webp",
-    "Almond Croissant": "/images/leclerc-bakery/menu/almond-croissant.webp",
-    "Fruit Danish": "/images/leclerc-bakery/menu/fruit-danish.webp",
-    Palmier: "/images/leclerc-bakery/menu/palmier.webp",
-    Eclair: "/images/leclerc-bakery/menu/eclair.webp",
-    "Sourdough Loaf": "/images/leclerc-bakery/menu/sourdough-loaf.webp",
-    "French Baguette": "/images/leclerc-bakery/menu/french-baguette.webp",
-    "Whole Wheat Country":
-      "/images/leclerc-bakery/menu/whole-wheat-country.webp",
-    "Olive Rosemary": "/images/leclerc-bakery/menu/olive-rosemary.webp",
-    Brioche: "/images/leclerc-bakery/menu/brioche.webp",
-    Multigrain: "/images/leclerc-bakery/menu/multigrain.webp",
-  };
-
-  if (imageMap[name]) return imageMap[name];
-  if (category) {
-    const key = `${category}-${name}`;
-    if (imageMap[key]) return imageMap[key];
-  }
-
-  return "/images/leclerc-bakery/signature/choc-chip-walnut.webp";
-};
-
 const toMenuCategory = (categoryName: string): MenuItem["category"] => {
   const normalized = categoryName.toLowerCase();
   if (normalized.includes("pastr")) return "pastries";
@@ -83,7 +51,7 @@ const mapProduct = (product: Product, categoryName: string): MenuItem => {
     name: product.name,
     description: stripCaloriesFromDescription(product.description),
     price: numericPrice,
-    image: product.images?.[0] || getImagePath(product.name, categoryName),
+    image: product.images?.[0] ?? null,
     calories: deriveCalories(product.name, product.description),
     category: toMenuCategory(categoryName),
     isPopular: tags.some((tag) => tag.toLowerCase().includes("popular")),

@@ -20,6 +20,7 @@ import {
 import { ItemUnavailableActions } from "@/types/common";
 import { removeCartCartId } from "@/lib/local-storage";
 import { useCartStore } from "@/store/cart-store";
+import { toast } from "sonner";
 
 interface CartContextType {
   items: LocalCartItem[];
@@ -104,18 +105,25 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (!ensureCartReady()) return;
       setUiLoading(true);
       try {
-        await postData(`/api/v1/locations/${locationId}/carts/${cartId}/cart-item`, {
-          productId: item.id,
-          quantity: 1,
-          specialInstructions: "",
-          itemUnavailableAction: ItemUnavailableActions.REMOVE_ITEM,
-          selections: [],
-        });
+        await postData(
+          `/api/v1/locations/${locationId}/carts/${cartId}/cart-item`,
+          {
+            productId: item.id,
+            quantity: 1,
+            specialInstructions: "",
+            itemUnavailableAction: ItemUnavailableActions.REMOVE_ITEM,
+            selections: [],
+          },
+        );
         await mutate();
-        setIsCartOpen(true);
+        toast.success(`${item.name} added to cart`, {
+          description: "Tap the cart to review your order.",
+          duration: 2000,
+        });
       } catch (err) {
         const { message } = formatApiError(err);
         setError(message);
+        toast.error(message, { duration: 2000 });
       } finally {
         setUiLoading(false);
       }
