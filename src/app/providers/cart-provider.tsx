@@ -5,25 +5,28 @@ import {
   useContext,
   useState,
   ReactNode,
+  useMemo,
   useCallback,
-  useEffect,
 } from "react";
 import { CartItem as LocalCartItem, MenuItem, ItemOptions } from "../types";
+import { useCart as useStorefrontCart } from "@/hooks/useCart";
+import { useOrderingSession } from "@/hooks/use-ordering-session";
+import { postData, patchData } from "@/lib/handle-api";
+import { formatApiError } from "@/lib/format-api-error";
 import {
-  createCart,
-  addItemToCart,
-  updateCartItemQuantity,
-  removeCartItem,
-  getCart,
-} from "@/lib/api/cart";
-import type { CartResponse } from "@/lib/api";
-import { menuItems } from "../data/menu-items";
+  DEFAULT_FULFILLMENT_METHOD,
+  location_Id as DEFAULT_LOCATION_ID,
+} from "@/constants";
+import { ItemUnavailableActions } from "@/types/common";
+import { removeCartCartId } from "@/lib/local-storage";
+import { useCartStore } from "@/store/cart-store";
+import { toast } from "sonner";
 
 interface CartContextType {
   items: LocalCartItem[];
   addToCart: (item: MenuItem & { options: ItemOptions }) => Promise<void>;
-  removeItem: (cartId: string) => void;
-  updateQuantity: (cartId: string, quantity: number) => void;
+  removeItem: (lineItemId: string) => void;
+  updateQuantity: (lineItemId: string, quantity: number) => void;
   clearCart: () => void;
   itemCount: number;
   subtotal: number;
@@ -41,316 +44,153 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-// Validation functions
-const validateMenuItem = (item: MenuItem & { options: ItemOptions }): void => {
-  if (!item.id || !item.name || !item.price) {
-    throw new Error("Invalid menu item: missing required fields");
-  }
-
-  if (typeof item.price !== "number" || item.price < 0) {
-    throw new Error("Invalid menu item: price must be a positive number");
-  }
-
-  if (!item.options || typeof item.options !== "object") {
-    throw new Error("Invalid menu item: options must be an object");
-  }
-};
-
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<LocalCartItem[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [uiLoading, setUiLoading] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [cartId, setCartId] = useState<string | null>(null);
-  const [apiCart, setApiCart] = useState<CartResponse | null>(null);
-  const [isHydrated, setIsHydrated] = useState(false);
 
-  const locationId = process.env.NEXT_PUBLIC_LOCATION_ID;
-  if (!locationId) {
-    throw new Error("NEXT_PUBLIC_LOCATION_ID environment variable is required");
-  }
+  const envLocationId = DEFAULT_LOCATION_ID;
+  const { setCartIdState } = useCartStore();
+  useOrderingSession(envLocationId);
+  const {
+    cart,
+    cartId,
+    locationId: resolvedLocationId,
+    mutate,
+    isLoading,
+  } = useStorefrontCart();
 
-  // Initialize cart function - moved to component scope
-  const initializeCart = useCallback(async () => {
-    try {
-      // Get existing cart ID from localStorage
-      const savedCartId =
-        typeof window !== "undefined"
-          ? localStorage.getItem("leclerc-cart-id")
-          : null;
+  const locationId = resolvedLocationId ?? envLocationId;
 
-      // Initializing cart for location
-      const newCartResponse = await createCart(
-        locationId,
-        savedCartId,
-        "takeout"
-      );
-      // Cart created successfully
-      // Setting cartId
-      setCartId(newCartResponse.cartId);
-      // Save cartId to localStorage
-      if (typeof window !== "undefined") {
-        localStorage.setItem("leclerc-cart-id", newCartResponse.cartId);
-      }
-    } catch (error) {
-      console.warn("❌ Failed to create cart, using local storage", error);
-    }
-  }, [locationId]);
-
-  // Handle hydration - load data only after component has mounted
-  useEffect(() => {
-    setIsHydrated(true);
-
-    // Load from localStorage after hydration
-    const savedItems = localStorage.getItem("leclerc-cart-items");
-    const savedCartId = localStorage.getItem("leclerc-cart-id");
-
-    if (savedItems) {
-      try {
-        setItems(JSON.parse(savedItems));
-      } catch (error) {
-        console.warn("Failed to parse saved cart items:", error);
-      }
+  const items = useMemo<LocalCartItem[]>(() => {
+    if (!cart?.items?.length) {
+      return [];
     }
 
-    if (savedCartId) {
-      setCartId(savedCartId);
+    return cart.items.map((line) => ({
+      cartId: line.id,
+      id: line.productId || line.id,
+      name: line.name,
+      description: line.description ?? "",
+      price: Number.parseFloat(line.price ?? "0") || 0,
+      quantity: line.quantity,
+      image: line.imageUrl ?? null,
+      category: "signature",
+      calories: 0,
+      options: {
+        warming: "room-temp",
+        packaging: "standard",
+        giftBox: false,
+      },
+    }));
+  }, [cart]);
+
+  const subtotal = cart?.subTotal ? Number.parseFloat(cart.subTotal) || 0 : 0;
+  const tax = cart?.taxTotal ? Number.parseFloat(cart.taxTotal) || 0 : 0;
+  const total = cart?.orderTotal ? Number.parseFloat(cart.orderTotal) || 0 : 0;
+  const itemCount = cart?.totalQuantity ?? items.reduce((sum, item) => sum + item.quantity, 0);
+
+  const clearError = useCallback(() => setError(null), []);
+
+  const ensureCartReady = () => {
+    if (!locationId || !cartId) {
+      setError("Cart is not ready. Please try again.");
+      return false;
     }
-  }, []);
-
-  // Initialize cart on component mount (only after hydration)
-  useEffect(() => {
-    if (!isHydrated) return;
-    initializeCart();
-  }, [initializeCart, isHydrated]);
-
-  const clearError = useCallback(() => {
-    setError(null);
-  }, []);
-
-  const openCart = useCallback(() => {
-    // Opening cart
-    setIsCartOpen(true);
-  }, []);
-
-  const closeCart = useCallback(() => {
-    setIsCartOpen(false);
-  }, []);
+    return true;
+  };
 
   const addToCart = useCallback(
     async (item: MenuItem & { options: ItemOptions }) => {
-      // Adding item to cart
-      setIsLoading(true);
-      setError(null);
-
+      if (!ensureCartReady()) return;
+      setUiLoading(true);
       try {
-        // Validate the item
-        validateMenuItem(item);
-
-        // Ensure we have a cart
-        let currentCartId = cartId;
-        if (!currentCartId) {
-          console.log("No cart ID found, creating new cart...");
-          await initializeCart();
-          currentCartId = cartId; // Get the updated cartId
-        } else if (!apiCart) {
-          console.log("Cart not initialized, creating new cart...");
-          await initializeCart();
-          currentCartId = cartId; // Get the updated cartId
-        }
-
-        // Now we should have a valid cartId
-        if (currentCartId) {
-          // Try to use API
-          const addItemData = {
+        await postData(
+          `/api/v1/locations/${locationId}/carts/${cartId}/cart-item`,
+          {
             productId: item.id,
             quantity: 1,
-            specialInstructions: item.options.giftBox ? "Add gift box" : "",
-            itemUnavailableAction: "remove_item",
-            selectedModifiers: [], // Empty for now since we're not using complex modifiers
-          };
-
-          // Calling addItemToCart API
-          console.log("Adding item to cart:", {
-            locationId,
-            currentCartId,
-            addItemData,
-          });
-          console.log("Current cart state:", apiCart);
-          // Making API call to add item to cart
-          const addResult = await addItemToCart(
-            locationId,
-            currentCartId,
-            addItemData
-          );
-          console.log("API call successful:", addResult);
-          // API call successful
-
-          // Fetch the updated cart to get the full cart data
-          const updatedCart = await getCart(locationId, currentCartId);
-          // Fetched updated cart
-          setApiCart(updatedCart);
-
-          // Convert API cart items to local format
-          const localItems: LocalCartItem[] = (updatedCart.items || []).map(
-            (apiItem) => {
-              // Find matching menu item to get full details
-              const menuItem = menuItems.find(
-                (mi) => mi.id === apiItem.productId
-              );
-
-              return {
-                id: apiItem.productId,
-                name: apiItem.name,
-                description: apiItem.description || menuItem?.description || "",
-                price:
-                  typeof apiItem.price === "string"
-                    ? parseFloat(apiItem.price)
-                    : apiItem.price,
-                image:
-                  apiItem.imageUrl ||
-                  menuItem?.image ||
-                  "/images/leclerc-bakery/signature/choc-chip-walnut.webp",
-                category: menuItem?.category || "cookies",
-                cartId: apiItem.id,
-                quantity: apiItem.quantity,
-                options: {
-                  giftBox:
-                    apiItem.specialInstructions?.includes("gift box") || false,
-                  warming: "room-temp",
-                  packaging: "standard",
-                },
-                calories: menuItem?.calories || 0,
-                isNew: menuItem?.isNew || false,
-                isPopular: menuItem?.isPopular || false,
-                isGlutenFree: menuItem?.isGlutenFree || false,
-              };
-            }
-          );
-
-          setItems(localItems);
-          // Save to localStorage
-          if (typeof window !== "undefined") {
-            localStorage.setItem(
-              "leclerc-cart-items",
-              JSON.stringify(localItems)
-            );
-          }
-        } else {
-          // Fallback to local storage
-          let finalPrice = item.price;
-          if (item.options.giftBox) {
-            finalPrice += 5.0;
-          }
-
-          const cartItem: LocalCartItem = {
-            ...item,
-            price: finalPrice,
-            cartId: `${item.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            quantity: 1,
-          };
-
-          const newItems = [...items, cartItem];
-          setItems(newItems);
-
-          // Save to localStorage
-          if (typeof window !== "undefined") {
-            localStorage.setItem(
-              "leclerc-cart-items",
-              JSON.stringify(newItems)
-            );
-          }
-        }
-
-        // Automatically open the cart when an item is added
-        // Opening cart when item is added
-        setIsCartOpen(true);
-      } catch (err: any) {
-        const errorMessage =
-          err instanceof Error ? err.message : "Failed to add item to cart";
-        setError(errorMessage);
-        console.error("❌ Error adding item to cart:", err);
-        console.error("Error details:", {
-          message: err.message,
-          status: err.response?.status,
-          data: err.response?.data,
-          config: err.config,
+            specialInstructions: "",
+            itemUnavailableAction: ItemUnavailableActions.REMOVE_ITEM,
+            selections: [],
+          },
+        );
+        await mutate();
+        toast.success(`${item.name} added to cart`, {
+          description: "Tap the cart to review your order.",
+          duration: 2000,
         });
-        throw err; // Re-throw so UI can handle it
+      } catch (err) {
+        const { message } = formatApiError(err);
+        setError(message);
+        toast.error(message, { duration: 2000 });
       } finally {
-        setIsLoading(false);
+        setUiLoading(false);
       }
     },
-    [cartId, locationId, initializeCart, items, apiCart]
+    [cartId, locationId, mutate, ensureCartReady],
   );
 
-  const removeItem = (cartId: string) => {
-    const newItems = items.filter((item) => item.cartId !== cartId);
-    setItems(newItems);
-    // Save to localStorage
-    if (typeof window !== "undefined") {
-      localStorage.setItem("leclerc-cart-items", JSON.stringify(newItems));
-    }
-  };
-
-  const updateQuantity = (cartId: string, quantity: number) => {
-    if (quantity <= 0) {
-      removeItem(cartId);
-    } else {
-      const newItems = items.map((item) =>
-        item.cartId === cartId ? { ...item, quantity } : item
-      );
-      setItems(newItems);
-      // Save to localStorage
-      if (typeof window !== "undefined") {
-        localStorage.setItem("leclerc-cart-items", JSON.stringify(newItems));
+  const updateQuantity = useCallback(
+    async (lineId: string, quantity: number) => {
+      if (!ensureCartReady()) return;
+      setUiLoading(true);
+      try {
+        await patchData(
+          `/api/v1/locations/${locationId}/carts/${cartId}/cart-item/${lineId}/quantity`,
+          { quantity },
+        );
+        await mutate();
+      } catch (err) {
+        const { message } = formatApiError(err);
+        setError(message);
+      } finally {
+        setUiLoading(false);
       }
-    }
-  };
-
-  const clearCart = () => {
-    setItems([]);
-    // Clear localStorage
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("leclerc-cart-items");
-      localStorage.removeItem("leclerc-cart-id");
-    }
-  };
-
-  const itemCount =
-    apiCart?.totalQuantity ||
-    items.reduce((sum, item) => sum + item.quantity, 0);
-  const subtotal = apiCart
-    ? parseFloat(apiCart.subTotal)
-    : items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const tax = apiCart ? parseFloat(apiCart.taxTotal) : subtotal * 0.08875; // NYC tax rate
-  const total = apiCart ? parseFloat(apiCart.orderTotal) : subtotal + tax;
-
-  return (
-    <CartContext.Provider
-      value={{
-        items,
-        addToCart,
-        removeItem,
-        updateQuantity,
-        clearCart,
-        itemCount,
-        subtotal,
-        tax,
-        total,
-        isLoading,
-        error,
-        clearError,
-        isCartOpen,
-        openCart,
-        closeCart,
-        cartId,
-        locationId,
-      }}
-    >
-      {children}
-    </CartContext.Provider>
+    },
+    [cartId, locationId, mutate, ensureCartReady],
   );
+
+  const removeItem = useCallback(
+    (lineId: string) => {
+      void updateQuantity(lineId, 0);
+    },
+    [updateQuantity],
+  );
+
+  const clearCart = useCallback(() => {
+    if (locationId) {
+      removeCartCartId(locationId, DEFAULT_FULFILLMENT_METHOD);
+      setCartIdState(null);
+    }
+    setIsCartOpen(false);
+    mutate(undefined, true);
+  }, [locationId, mutate, setCartIdState]);
+
+  const openCart = () => setIsCartOpen(true);
+  const closeCart = () => setIsCartOpen(false);
+
+  const contextValue: CartContextType = {
+    items,
+    addToCart,
+    removeItem,
+    updateQuantity,
+    clearCart,
+    itemCount,
+    subtotal,
+    tax,
+    total,
+    isLoading: isLoading || uiLoading,
+    error,
+    clearError,
+    isCartOpen,
+    openCart,
+    closeCart,
+    cartId,
+    locationId,
+  };
+
+  return <CartContext.Provider value={contextValue}>{children}</CartContext.Provider>;
 }
 
 export function useCart() {

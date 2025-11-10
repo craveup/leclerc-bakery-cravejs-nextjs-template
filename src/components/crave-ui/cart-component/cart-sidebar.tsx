@@ -1,18 +1,42 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState, Suspense, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { X, Plus, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ShoppingCart } from "lucide-react";
 import Image from "next/image";
 import { useFormatters } from "@/lib/i18n/hooks";
+import { useCart } from "@/hooks/useCart";
+import { useRouter } from "next/navigation";
+import { patchData } from "@/lib/handle-api";
+import { formatApiError } from "@/lib/format-api-error";
+import { toast } from "sonner";
+import CounterButton from "./CounterButton";
+import useEmblaCarousel from "embla-carousel-react";
+import { useApiResource } from "@/hooks/useApiResource";
+import ProductDescriptionDialog from "@/app/components/product-description/ProductDescriptionDialog";
+import { absolutizeImage } from "@/lib/utils/images";
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  CHECKOUT_BASE_URL,
+  location_Id as DEFAULT_LOCATION_ID,
+} from "@/constants";
+import { ResponsiveSheet } from "@/components/ResponsiveSheet";
+import type { StorefrontCart, CartModifierGroup } from "@/types/cart-types";
 
-interface CartItem {
+interface SidebarCartItem {
   id: string;
   name: string;
-  price: number;
   quantity: number;
   imageUrl: string | null;
-  modifiers?: string[];
+  unitPrice: number;
+  totalPrice: number;
+  modifiersLabel?: string;
+  specialInstructions?: string;
 }
 
 interface SuggestedItem {
@@ -25,429 +49,636 @@ interface SuggestedItem {
 interface CartSidebarProps {
   isOpen: boolean;
   onClose: () => void;
-  cartItems?: CartItem[];
-  suggestedItems?: SuggestedItem[];
-  onUpdateQuantity?: (itemId: string, quantity: number) => void;
-  onRemoveItem?: (itemId: string) => void;
-  onAddSuggestedItem?: (item: SuggestedItem) => void;
-  onCheckout?: () => void;
+  cartItems?: SidebarCartItem[];
+  onCheckout?: (checkoutUrl?: string) => void | Promise<void>;
 }
 
-const defaultCartItems: CartItem[] = [
-  {
-    id: "1",
-    name: "Brioche with Chocolate Chips",
-    price: 5.5,
-    quantity: 1,
-    imageUrl:
-      "https://img.cdn4dd.com/p/fit=cover,width=100,height=100,format=auto,quality=50/media/photosV2/7bb0efbd-1141-4518-bfe1-2cab3571478f-retina-large.jpg",
-  },
-];
+const getReturnUrl = () => {
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return window.location.origin;
+  }
+  return process.env.NEXT_PUBLIC_SITE_URL ?? null;
+};
 
-const defaultSuggestedItems: SuggestedItem[] = [
-  {
-    id: "s1",
-    name: "Two Chip Chocolate Chip Cookie",
-    price: 6.33,
-    imageUrl:
-      "https://img.cdn4dd.com/cdn-cgi/image/fit=contain,width=1200,height=672,format=auto/https://doordash-static.s3.amazonaws.com/media/photosV2/d1edfa6f-0b34-4919-9833-237faa20feae-retina-large.jpg",
-  },
-  {
-    id: "s2",
-    name: "Organic Valley Milk",
-    price: 3.3,
-    imageUrl:
-      "https://img.cdn4dd.com/cdn-cgi/image/fit=contain,width=1200,height=672,format=auto/https://doordash-static.s3.amazonaws.com/media/photosV2/b6c4aa04-a4b1-47e4-b0ab-d8590fcdaace-retina-large.jpg",
-  },
-  {
-    id: "s3",
-    name: "Chocolate Chip Walnut Cookie",
-    price: 6.33,
-    imageUrl:
-      "https://img.cdn4dd.com/cdn-cgi/image/fit=contain,width=1200,height=672,format=auto/https://doordash-static.s3.amazonaws.com/media/photosV2/471c0dfb-6d30-41e7-b75d-1c9d0e17cf8c-retina-large.jpg",
-  },
-  {
-    id: "s4",
-    name: "Latte",
-    price: 4.95,
-    imageUrl:
-      "https://img.cdn4dd.com/cdn-cgi/image/fit=contain,width=1200,height=672,format=auto/https://doordash-static.s3.amazonaws.com/media/photosV2/e261fb7e-1126-4e01-b305-e058374ca571-retina-large.jpg",
-  },
-  {
-    id: "s5",
-    name: "Dark Chocolate Peanut Butter Chip Cookie",
-    price: 6.33,
-    imageUrl:
-      "https://img.cdn4dd.com/cdn-cgi/image/fit=contain,width=1200,height=672,format=auto/https://doordash-static.s3.amazonaws.com/media/photosV2/f59c45f6-3de4-4802-af94-1541cb3fab1e-retina-large.jpg",
-  },
-  {
-    id: "s6",
-    name: "Oatly Milk",
-    price: 3.3,
-    imageUrl:
-      "https://img.cdn4dd.com/cdn-cgi/image/fit=contain,width=1200,height=672,format=auto/https://doordash-static.s3.amazonaws.com/media/photosV2/6f57853f-7933-45f7-a69d-1ddcbbe3df6b-retina-large.png",
-  },
-];
+const sanitizeBaseUrl = (value: string | null | undefined) => {
+  if (!value) return null;
+  return value.replace(/\/+$/, "");
+};
 
-export default function CartSidebar({
-  isOpen,
-  onClose,
-  cartItems = defaultCartItems,
-  suggestedItems = defaultSuggestedItems,
-  onUpdateQuantity,
-  onRemoveItem,
-  onAddSuggestedItem,
-  onCheckout,
-}: CartSidebarProps) {
-  const [suggestedScrollPosition, setSuggestedScrollPosition] = useState(0);
-  const [internalCartItems, setInternalCartItems] =
-    useState<CartItem[]>(cartItems);
-  const { currency } = useFormatters();
+function formatSelections(
+  groups: CartModifierGroup[] | undefined
+): string | undefined {
+  if (!Array.isArray(groups) || groups.length === 0) return undefined;
 
-  // Update internal state when props change
-  React.useEffect(() => {
-    setInternalCartItems(cartItems);
-  }, [cartItems]);
+  const parts: string[] = [];
 
-  // Lock body scroll when cart is open - minimal approach
-  React.useEffect(() => {
-    if (isOpen) {
-      // Add scroll lock class to body
-      document.body.classList.add("cart-scroll-lock");
+  const visit = (collection: CartModifierGroup[]) => {
+    collection.forEach((group) => {
+      const itemsLabel = group.items
+        .map((item) => {
+          const quantityPrefix = item.quantity > 1 ? `${item.quantity}x ` : "";
+          return `${quantityPrefix}${item.name}`;
+        })
+        .filter(Boolean)
+        .join(", ");
 
-      // Add styles via CSS-in-JS
-      const style = document.createElement("style");
-      style.id = "cart-scroll-lock-styles";
-      style.textContent = `
-        .cart-scroll-lock {
-          overflow: hidden !important;
-        }
-      `;
-      document.head.appendChild(style);
-
-      // Cleanup function
-      return () => {
-        document.body.classList.remove("cart-scroll-lock");
-        const styleElement = document.getElementById("cart-scroll-lock-styles");
-        if (styleElement) {
-          styleElement.remove();
-        }
-      };
-    }
-  }, [isOpen]);
-
-  const handleQuantityChange = (itemId: string, change: number) => {
-    const item = internalCartItems.find((item) => item.id === itemId);
-    if (item) {
-      const newQuantity = Math.max(0, item.quantity + change);
-
-      if (newQuantity === 0) {
-        // Remove item from cart
-        const updatedItems = internalCartItems.filter(
-          (item) => item.id !== itemId
-        );
-        setInternalCartItems(updatedItems);
-        onRemoveItem?.(itemId);
-      } else {
-        // Update quantity
-        const updatedItems = internalCartItems.map((cartItem) =>
-          cartItem.id === itemId
-            ? { ...cartItem, quantity: newQuantity }
-            : cartItem
-        );
-        setInternalCartItems(updatedItems);
-        onUpdateQuantity?.(itemId, newQuantity);
+      if (itemsLabel) {
+        parts.push(`${group.name}: ${itemsLabel}`);
       }
+
+      group.items.forEach((item) => {
+        if (Array.isArray(item.children) && item.children.length > 0) {
+          visit(item.children);
+        }
+      });
+    });
+  };
+
+  visit(groups);
+  return parts.join(" | ");
+}
+
+function mapCartResponseToItems(
+  cart: StorefrontCart | null | undefined
+): SidebarCartItem[] {
+  if (!cart?.items?.length) return [];
+
+  return cart.items.map((line) => {
+    const unitPrice = Number.parseFloat(line.price ?? "0") || 0;
+    const totalPrice =
+      Number.parseFloat(line.total ?? "0") || unitPrice * line.quantity;
+    const imageUrl = line.imageUrl || null;
+
+    return {
+      id: line.id,
+      name: line.name,
+      quantity: line.quantity,
+      imageUrl,
+      unitPrice,
+      totalPrice,
+      modifiersLabel: formatSelections(line.selections),
+      specialInstructions: line.specialInstructions?.trim() || undefined,
+    };
+  });
+}
+
+type ApiProduct =
+  | {
+      id: string;
+      name: string;
+      price?: number | string;
+      imageUrl?: string;
+      image?: string;
+      mainImageUrl?: string;
+      images?: { url?: string }[];
     }
-  };
+  | any;
 
-  const handleRemoveItem = (itemId: string) => {
-    const updatedItems = internalCartItems.filter((item) => item.id !== itemId);
-    setInternalCartItems(updatedItems);
-    onRemoveItem?.(itemId);
-  };
-
-  const handleAddSuggestedItem = (suggestedItem: SuggestedItem) => {
-    // Check if item already exists in cart
-    const existingItemIndex = internalCartItems.findIndex(
-      (item) => item.id === suggestedItem.id || item.name === suggestedItem.name
+function mapProductsToSuggested(
+  data: ApiProduct[] | undefined
+): SuggestedItem[] {
+  if (!Array.isArray(data)) return [];
+  const pickImage = (p: ApiProduct): string | null =>
+    absolutizeImage(
+      p.imageUrl ??
+        p.mainImageUrl ??
+        (Array.isArray(p.images) && p.images[0]) ??
+        p.image
     );
 
-    if (existingItemIndex >= 0) {
-      // If item exists, increase quantity
-      const updatedItems = internalCartItems.map((item) =>
-        item.id === internalCartItems[existingItemIndex].id
-          ? { ...item, quantity: item.quantity + 1 }
-          : item
-      );
-      setInternalCartItems(updatedItems);
-      onUpdateQuantity?.(
-        internalCartItems[existingItemIndex].id,
-        internalCartItems[existingItemIndex].quantity + 1
-      );
-    } else {
-      // Add new item to cart
-      const newCartItem: CartItem = {
-        id: suggestedItem.id,
-        name: suggestedItem.name,
-        price: suggestedItem.price,
-        quantity: 1,
-        imageUrl: suggestedItem.imageUrl,
-      };
+  return data.map((p) => ({
+    id: String(p.id),
+    name: String(p.name ?? "Product"),
+    price: Number(p.price ?? 0),
+    imageUrl: pickImage(p) ?? null,
+  }));
+}
 
-      const updatedItems = [...internalCartItems, newCartItem];
-      setInternalCartItems(updatedItems);
-      onAddSuggestedItem?.(suggestedItem);
+function CartSidebarContent({
+  isOpen,
+  onClose,
+  cartItems,
+  onCheckout,
+}: CartSidebarProps) {
+  const router = useRouter();
+  const { currency } = useFormatters();
+
+  const {
+    cart,
+    cartId,
+    locationId: resolvedLocationId,
+    mutate,
+    isLoading: cartLoading,
+    isValidating: cartValidating,
+  } = useCart();
+
+  const locationId = resolvedLocationId ?? DEFAULT_LOCATION_ID;
+  const storefrontLocationId = cart?.locationId ?? locationId ?? null;
+
+  const hostedCheckoutUrl = useMemo(() => {
+    if (!storefrontLocationId || !cartId) return null;
+    const base = sanitizeBaseUrl(CHECKOUT_BASE_URL);
+    if (!base) return null;
+
+    try {
+      const url = new URL(`${base}/${storefrontLocationId}/checkout`);
+      url.searchParams.set("cartId", cartId);
+      const returnTarget = getReturnUrl();
+      if (returnTarget) {
+        url.searchParams.set("returnUrl", returnTarget);
+      }
+      return url.toString();
+    } catch {
+      return null;
+    }
+  }, [cartId, storefrontLocationId]);
+
+  const internalCheckoutUrl = useMemo(() => {
+    if (!storefrontLocationId || !cartId) return null;
+    return `/locations/${storefrontLocationId}/carts/${cartId}/checkout`;
+  }, [storefrontLocationId, cartId]);
+
+  const normalizeCheckoutUrl = useCallback(
+    (candidate?: string | null) => {
+      if (!candidate) return null;
+      const runtimeReturnUrl = getReturnUrl();
+      const baseOrigin = runtimeReturnUrl ?? "http://localhost:3000";
+
+      try {
+        const isAbsolute = /^https?:\/\//i.test(candidate);
+        const url = isAbsolute
+          ? new URL(candidate)
+          : new URL(candidate, baseOrigin);
+
+        if (cartId) {
+          url.searchParams.set("cartId", cartId);
+        }
+        if (runtimeReturnUrl) {
+          url.searchParams.set("returnUrl", runtimeReturnUrl);
+        }
+
+        return isAbsolute
+          ? url.toString()
+          : `${url.pathname}${url.search}${url.hash}`;
+      } catch {
+        return candidate;
+      }
+    },
+    [cartId],
+  );
+
+  const checkoutUrl = useMemo(() => {
+    return (
+      normalizeCheckoutUrl(hostedCheckoutUrl) ??
+      normalizeCheckoutUrl(cart?.checkoutUrl?.trim()) ??
+      normalizeCheckoutUrl(internalCheckoutUrl)
+    );
+  }, [
+    normalizeCheckoutUrl,
+    hostedCheckoutUrl,
+    cart?.checkoutUrl,
+    internalCheckoutUrl,
+  ]);
+
+  const [busyLineId, setBusyLineId] = useState<string | null>(null);
+  const [productIdToOpen, setProductIdToOpen] = useState<string>("");
+
+  const [emblaRef, emblaApi] = useEmblaCarousel({
+    loop: true,
+    align: "start",
+    skipSnaps: false,
+  });
+  const [canScrollPrev, setCanScrollPrev] = useState(false);
+  const [canScrollNext, setCanScrollNext] = useState(false);
+  useEffect(() => {
+    if (!emblaApi) return;
+    const onSelect = () => {
+      setCanScrollPrev(emblaApi.canScrollPrev());
+      setCanScrollNext(emblaApi.canScrollNext());
+    };
+    emblaApi.on("select", onSelect);
+    emblaApi.on("reInit", onSelect);
+    onSelect();
+    return () => {
+      emblaApi.off("select", onSelect);
+      emblaApi.off("reInit", onSelect);
+    };
+  }, [emblaApi]);
+  const onPrev = () => emblaApi?.scrollPrev();
+  const onNext = () => emblaApi?.scrollNext();
+
+  const apiItems = useMemo<SidebarCartItem[]>(() => {
+    if (cart) return mapCartResponseToItems(cart);
+    if (cartItems?.length) return cartItems;
+    return [];
+  }, [cart, cartItems]);
+
+  const recommendationsEndpoint =
+    locationId && cartId
+      ? `/api/v1/locations/${locationId}/carts/${cartId}/products`
+      : null;
+
+  const { data: recRaw, isLoading: recLoading } = useApiResource<ApiProduct[]>(
+    recommendationsEndpoint,
+    {
+      shouldFetch: Boolean(locationId && cartId),
+    }
+  );
+
+  const liveSuggested = useMemo(() => mapProductsToSuggested(recRaw), [recRaw]);
+  const showRecSkeleton = recLoading && !liveSuggested.length;
+  const showSuggestionsSection =
+    (showRecSkeleton || liveSuggested.length > 0) && !!cartId;
+
+  const subtotal = useMemo(() => {
+    if (cart?.subTotal) {
+      return Number.parseFloat(cart.subTotal) || 0;
+    }
+    return apiItems.reduce((sum, item) => sum + item.totalPrice, 0);
+  }, [apiItems, cart]);
+
+  const placeholderImage =
+    "https://kzmps94w6wprloamplrj.lite.vusercontent.net/placeholder.svg?height=200&width=300";
+
+  useEffect(() => {
+    if (!isOpen) return;
+    document.body.classList.add("cart-scroll-lock");
+    const style = document.createElement("style");
+    style.id = "cart-scroll-lock-styles";
+    style.textContent = `.cart-scroll-lock{overflow:hidden!important;}`;
+    document.head.appendChild(style);
+    return () => {
+      document.body.classList.remove("cart-scroll-lock");
+      document.getElementById("cart-scroll-lock-styles")?.remove();
+    };
+  }, [isOpen]);
+
+  const setQuantity = async (lineId: string, nextQty: number) => {
+    if (!locationId || !cartId) {
+      toast.error("Cart is not ready yet. Please try again.", {
+        duration: 600,
+      });
+      return false;
+    }
+
+    setBusyLineId(lineId);
+    try {
+      await patchData(
+        `/api/v1/locations/${locationId}/carts/${cartId}/cart-item/${lineId}/quantity`,
+        { quantity: nextQty }
+      );
+      await mutate();
+      return true;
+    } catch (err) {
+      toast.error(formatApiError(err).message, { duration: 600 });
+      return false;
+    } finally {
+      setBusyLineId(null);
     }
   };
 
-  const scrollSuggested = (direction: "left" | "right") => {
-    const container = document.getElementById("suggested-carousel");
-    if (!container) return;
-
-    const scrollAmount = 200;
-    const newPosition =
-      direction === "left"
-        ? Math.max(0, suggestedScrollPosition - scrollAmount)
-        : suggestedScrollPosition + scrollAmount;
-
-    container.scrollTo({
-      left: newPosition,
-      behavior: "smooth",
-    });
-    setSuggestedScrollPosition(newPosition);
+  const getQuantityToastMessage = (
+    name: string | undefined,
+    previousQty: number,
+    nextQty: number
+  ) => {
+    const itemLabel = name?.trim() || "Item";
+    if (nextQty <= 0) return `${itemLabel} removed from your cart`;
+    if (nextQty > previousQty)
+      return `${itemLabel} quantity increased to ${nextQty}`;
+    if (nextQty < previousQty)
+      return `${itemLabel} quantity decreased to ${nextQty}`;
+    return `${itemLabel} quantity updated`;
   };
 
-  const subtotal = internalCartItems.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
+  const handleIncrease = async (lineId: string, qty: number, name?: string) => {
+    const nextQty = qty + 1;
+    const success = await setQuantity(lineId, nextQty);
+    if (success) {
+      toast.success(getQuantityToastMessage(name, qty, nextQty), {
+        duration: 600,
+      });
+    }
+  };
+  const handleDecrease = async (lineId: string, qty: number, name?: string) => {
+    const nextQty = Math.max(0, qty - 1);
+    const success = await setQuantity(lineId, nextQty);
+    if (success) {
+      toast.success(getQuantityToastMessage(name, qty, nextQty), {
+        duration: 600,
+      });
+    }
+  };
+  const handleRemove = async (lineId: string, qty: number, name?: string) => {
+    const success = await setQuantity(lineId, 0);
+    if (success) {
+      toast.success(getQuantityToastMessage(name, qty, 0), {
+        duration: 600,
+      });
+    }
+  };
+  const handleCheckoutClick = async () => {
+    if (!apiItems.length || !cartId) return;
+
+    if (!checkoutUrl) {
+      toast.error("Checkout is not available right now. Please try again.", {
+        duration: 600,
+      });
+      return;
+    }
+
+    await mutate();
+
+    if (onCheckout) {
+      await Promise.resolve(onCheckout(checkoutUrl));
+      return;
+    }
+
+    if (/^https?:\/\//i.test(checkoutUrl)) {
+      window.location.href = checkoutUrl;
+      return;
+    }
+
+    router.push(checkoutUrl);
+  };
+
+  const handleSheetOpenChange = React.useCallback(
+    (nextOpen: boolean) => {
+      if (!nextOpen) onClose();
+    },
+    [onClose]
   );
 
+  const sheetTitle = "YOUR ORDER";
+  const sheetDescription = "Review your items and proceed to checkout.";
+
+  const sheetFooter = (
+    <div className="w-full space-y-4 p-2 sm:p-4 md:p-4">
+      <Button
+        onClick={handleCheckoutClick}
+        className="w-full h-14 text-base bg-[#EFE7D2] rounded-2xl disabled:opacity-60"
+        size="lg"
+        data-testid="CheckoutButton"
+        disabled={!apiItems.length}
+      >
+        <div className="flex items-center justify-between w-full">
+          <span>CHECKOUT</span>
+          <span>{currency(subtotal)}</span>
+        </div>
+      </Button>
+    </div>
+  );
   if (!isOpen) return null;
 
   return (
-    <>
-      {/* Backdrop - covers everything including navbar and scrollbars */}
+    <ResponsiveSheet
+      open={isOpen}
+      setOpen={handleSheetOpenChange}
+      title={sheetTitle}
+      titleClassName="font-heading-h4 text-textdefault text-lg tracking-wider"
+      headerClassName="px-6 py-4 border-b border-borderdefault"
+      description={sheetDescription}
+      className="flex h-full flex-col p-0 md:max-w-[500px]"
+      innerContentClassName="flex flex-col p-0"
+      hideMainBtn
+      hideCloseBtn
+      footer={sheetFooter}
+    >
       <div
-        className="fixed inset-0 bg-black/50 z-[999] overflow-hidden"
-        onClick={onClose}
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          zIndex: 999,
-        }}
-      />
-
-      {/* Sidebar */}
-      <div
-        className="fixed right-0 top-0 h-full w-[430px] max-w-[430px] bg-background shadow-xl z-[1000] flex flex-col"
-        style={{
-          width: "430px",
-          maxWidth: "430px",
-          zIndex: 1000,
-        }}
-        role="dialog"
-        aria-modal="true"
+        className="flex h-full min-h-0 flex-col bg-backgrounddefault"
         data-testid="OrderCart"
       >
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <div className="w-6" /> {/* Spacer */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            aria-label="Close"
-            className="h-8 w-8"
-          >
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
-
-        {/* Cart Content */}
-        <div className="flex-1 overflow-y-auto">
-          {/* Cart Items */}
-          <div className="p-4">
-            {internalCartItems.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                Your cart is empty
+        <div className="flex-1 overflow-hidden min-h-0">
+          <div className="p-2">
+            {cartLoading ? (
+              <div className="space-y-4">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-4 p-4 border border-borderdefault rounded-2xl animate-pulse"
+                  >
+                    <div className="w-16 h-16 rounded-lg bg-muted" />
+                    <div className="flex-1 min-w-0">
+                      <div className="h-4 bg-muted rounded w-2/3 mb-2" />
+                      <div className="h-4 bg-muted rounded w-1/3" />
+                    </div>
+                    <div className="w-24 h-8 bg-muted rounded-full" />
+                  </div>
+                ))}
+              </div>
+            ) : apiItems.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-16 h-16 rounded-full bg-backgroundmuted flex items-center justify-center">
+                    <ShoppingCart className="w-8 h-8 text-icondefault" />
+                  </div>
+                  <p className="font-text-meta text-textmuted text-sm tracking-wider">
+                    YOUR CART IS EMPTY
+                  </p>
+                </div>
               </div>
             ) : (
               <div className="space-y-4">
-                {internalCartItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center gap-4 p-3 border border-border rounded-lg hover:bg-muted/50"
-                    role="listitem"
-                    aria-label={`click to open modal and edit item: ${item.name}`}
-                    data-testid="OrderCartItem"
-                  >
-                    {/* Item Image */}
-                    <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
-                      <Image
-                        src={item.imageUrl || "/placeholder.svg"}
-                        alt={item.name}
-                        width={64}
-                        height={64}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
+                {apiItems.map((item) => {
+                  const modifiersLabel = item.modifiersLabel ?? "";
+                  const hasModifiers = Boolean(modifiersLabel);
+                  const specialInstructions = item.specialInstructions;
+                  const hasSpecialInstructions = Boolean(specialInstructions);
+                  const lineTotal = currency(item.totalPrice);
 
-                    {/* Item Details */}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-foreground truncate">
-                        {item.name}
-                      </h3>
-                      <p className="text-lg font-semibold text-foreground mt-1">
-                        {currency(item.price)}
-                      </p>
-                    </div>
-
-                    {/* Quantity Controls */}
-                    <div
-                      className="flex items-center gap-2"
-                      data-testid="QuantityContainer"
+                  return (
+                    <Card
+                      key={item.id}
+                      className="p-4"
+                      data-testid="OrderCartItem"
                     >
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleRemoveItem(item.id)}
-                        aria-label="remove item from cart"
-                        data-testid="stepper-decrement-button"
-                        className="h-8 w-8 text-muted-foreground hover:text-red-600"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div className="flex w-full gap-4 sm:gap-5">
+                        <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-backgroundmuted">
+                          <Image
+                            src={item.imageUrl || "/placeholder.svg"}
+                            alt={item.name}
+                            fill
+                            className="object-cover"
+                            sizes="80px"
+                          />
+                        </div>
+                        <div className="min-w-0 flex-1 space-y-2">
+                          <div className="flex flex-wrap items-center gap-2 text-textdefault">
+                            <p className="text-sm font-semibold sm:text-base truncate">
+                              {item.name}
+                            </p>
+                            <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                              Qty {item.quantity}
+                            </span>
+                          </div>
 
-                      <span
-                        className="text-sm font-medium min-w-[2rem] text-center"
-                        data-testid="stepper-expanded-quantity"
-                      >
-                        {item.quantity} ×
-                      </span>
+                          {hasModifiers && (
+                            <p className="line-clamp-2 text-xs text-textmuted">
+                              {modifiersLabel}
+                            </p>
+                          )}
 
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleQuantityChange(item.id, 1)}
-                        aria-label="add one to cart"
-                        data-testid="stepper-increment-button"
-                        className="h-8 w-8 text-muted-foreground hover:text-green-600"
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+                          {hasSpecialInstructions && (
+                            <p className="text-xs leading-snug text-muted-foreground line-clamp-2 break-all">
+                              Special instructions: {specialInstructions}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="flex flex-col items-end justify-start gap-2">
+                          <p className="text-sm font-semibold text-textdefault">
+                            {lineTotal}
+                          </p>
+
+                          <CounterButton
+                            quantity={item.quantity}
+                            isLoading={busyLineId === item.id}
+                            onIncrease={() =>
+                              void handleIncrease(
+                                item.id,
+                                item.quantity,
+                                item.name
+                              )
+                            }
+                            onDecrease={() => {
+                              if (item.quantity === 1) {
+                                void handleRemove(
+                                  item.id,
+                                  item.quantity,
+                                  item.name
+                                );
+                              } else {
+                                void handleDecrease(
+                                  item.id,
+                                  item.quantity,
+                                  item.name
+                                );
+                              }
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })}
               </div>
             )}
           </div>
 
-          {/* Suggested Items Section */}
-          <div className="border-t border-border p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3
-                className="text-lg font-semibold text-foreground"
-                data-testid="order-cart-recommendation-title"
-              >
-                In case you missed it
-              </h3>
-              <div className="flex gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => scrollSuggested("left")}
-                  aria-label="Previous button of carousel"
-                  className="h-8 w-8"
+          {showSuggestionsSection && (
+            <div className="border-t border-borderdefault p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3
+                  className="font-heading-h5 text-textdefault text-lg tracking-wider"
+                  data-testid="order-cart-recommendation-title"
                 >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => scrollSuggested("right")}
-                  aria-label="Next button of carousel"
-                  className="h-8 w-8"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-
-            {/* Suggested Items Carousel */}
-            <div className="overflow-hidden">
-              <div
-                id="suggested-carousel"
-                className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 items-stretch"
-                data-testid="order-cart-carousel-container"
-                style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-              >
-                {suggestedItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex-shrink-0 w-32"
-                    data-testid="CarouselSuggestedItem"
-                    tabIndex={0}
+                  YOU MIGHT ALSO LIKE
+                </h3>
+                <div className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={onPrev}
+                    aria-label="Previous"
+                    className="h-8 w-8 hover:bg-backgroundmuted text-textdefault cursor-pointer"
+                    disabled={!canScrollPrev}
                   >
-                    <div className="bg-card rounded-lg border border-border overflow-hidden hover:shadow-md transition-shadow h-full flex flex-col">
-                      <div className="relative">
-                        <div className="aspect-square">
-                          <Image
-                            src={item.imageUrl || "/placeholder.svg"}
-                            alt={item.name}
-                            width={128}
-                            height={128}
-                            className="w-full h-full object-cover"
-                            data-testid="CarouselItemImage"
-                          />
-                        </div>
-                        <div className="absolute bottom-0 right-0 p-2">
-                          <Button
-                            size="icon"
-                            variant="secondary"
-                            onClick={() => handleAddSuggestedItem(item)}
-                            aria-label="Add to cart"
-                            className="h-8 w-8 bg-white hover:bg-green-50 hover:border-green-300 rounded-full shadow-md border border-gray-200 transition-all duration-200 hover:scale-105"
-                          >
-                            <Plus className="h-4 w-4 text-green-600" />
-                          </Button>
-                        </div>
-                      </div>
-                      <div className="p-2 flex-1 flex flex-col justify-between">
-                        <h4 className="text-xs font-medium text-foreground line-clamp-2 mb-1">
-                          {item.name}
-                        </h4>
-                        <p className="text-sm font-semibold text-foreground">
-                          {currency(item.price)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={onNext}
+                    aria-label="Next"
+                    className="h-8 w-8 hover:bg-backgroundmuted text-textdefault cursor-pointer"
+                    disabled={!canScrollNext}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-            </div>
-          </div>
-        </div>
 
-        {/* Checkout Footer */}
-        <div className="border-t border-border p-4">
-          <Button
-            onClick={onCheckout}
-            className="w-full h-12 text-base font-semibold"
-            size="lg"
-            data-anchor-id="CheckoutButton"
-            data-testid="CheckoutButton"
-          >
-            <div className="flex items-center justify-between w-full">
-              <span>Checkout</span>
-              <span>{currency(subtotal)}</span>
+              <div className="relative">
+                <div className="overflow-hidden" ref={emblaRef}>
+                  <div className="flex gap-3">
+                    {(showRecSkeleton
+                      ? Array.from({ length: 8 })
+                      : liveSuggested
+                    ).map((raw, idx) => {
+                      const item = raw as SuggestedItem | undefined;
+
+                      return (
+                        <div
+                          key={item?.id ?? `skeleton-${idx}`}
+                          className="flex-[0_0_auto] w-36 sm:w-40 md:w-44"
+                          data-testid="CarouselSuggestedItem"
+                          tabIndex={0}
+                        >
+                          {showRecSkeleton ? (
+                            <Card className="gap-0 overflow-hidden p-0 animate-pulse flex flex-col h-full">
+                              <div className="relative aspect-4/3 w-full bg-muted" />
+                              <CardHeader className="p-4 flex flex-col flex-1 justify-between">
+                                <div className="h-4 bg-muted rounded w-3/4 mb-2" />
+                                <div className="h-4 bg-muted rounded w-1/3" />
+                              </CardHeader>
+                            </Card>
+                          ) : (
+                            <Card
+                              className="gap-0 overflow-hidden p-0 transition-all hover:shadow-md bg-background flex h-full flex-col"
+                              onClick={() =>
+                                item && setProductIdToOpen(item.id)
+                              }
+                              role="button"
+                            >
+                              <div className="relative aspect-4/3 w-full">
+                                <Image
+                                  src={item!.imageUrl || placeholderImage}
+                                  alt={item!.name}
+                                  fill
+                                  className="object-cover"
+                                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                  data-testid="CarouselItemImage"
+                                />
+                              </div>
+
+                              <CardHeader className="p-4 flex flex-col flex-1">
+                                <CardTitle className="text-sm line-clamp-2 min-h-[2.75rem]">
+                                  {item!.name}
+                                </CardTitle>
+                                <CardDescription className="font-semibold mt-auto">
+                                  {currency(item!.price)}
+                                </CardDescription>
+                              </CardHeader>
+                            </Card>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {productIdToOpen && (
+                <ProductDescriptionDialog
+                  onClose={() => setProductIdToOpen("")}
+                  locationId={locationId}
+                  productId={productIdToOpen}
+                  cartId={cartId ?? ""}
+                  isAddToCartBlocked={!cartId}
+                />
+              )}
             </div>
-          </Button>
+          )}
         </div>
       </div>
-    </>
+    </ResponsiveSheet>
+  );
+}
+
+export default function CartSidebar(props: CartSidebarProps) {
+  return (
+    <Suspense fallback={<div>Loading cart...</div>}>
+      <CartSidebarContent {...props} />
+    </Suspense>
   );
 }

@@ -1,5 +1,13 @@
 import * as React from "react";
-import { Plus, Heart, Clock, Star, AlertTriangle, Info } from "lucide-react";
+import {
+  Plus,
+  Heart,
+  Clock,
+  Star,
+  AlertTriangle,
+  Info,
+  Loader2,
+} from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader } from "./card";
 import { Button } from "./button";
 import {
@@ -70,9 +78,10 @@ export function MenuItemCard({
   ...props
 }: MenuItemCardProps) {
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+  const [isAdding, setIsAdding] = React.useState(false);
 
-  const handleAddToCart = () => {
-    if (!isAvailable) return;
+  const handleAddToCart = async () => {
+    if (!isAvailable || isAdding || !onAddToCart) return;
 
     const item = {
       name,
@@ -85,7 +94,12 @@ export function MenuItemCard({
       calories,
     };
 
-    onAddToCart?.(item);
+    setIsAdding(true);
+    try {
+      await Promise.resolve(onAddToCart(item));
+    } finally {
+      setIsAdding(false);
+    }
   };
 
   const handleFavorite = () => {
@@ -155,10 +169,14 @@ export function MenuItemCard({
             <Button
               size="sm"
               onClick={handleAddToCart}
-              disabled={!isAvailable}
+              disabled={!isAvailable || isAdding}
               className="self-center"
             >
-              <Plus className="h-4 w-4" />
+              {isAdding ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Plus className="h-4 w-4" />
+              )}
             </Button>
           </div>
         </CardContent>
@@ -352,12 +370,21 @@ export function MenuItemCard({
       <CardFooter className="pt-0">
         <Button
           onClick={handleAddToCart}
-          disabled={!isAvailable}
+          disabled={!isAvailable || isAdding}
           className="w-full"
           size="sm"
         >
-          <Plus className="h-4 w-4 mr-2" />
-          {isAvailable ? "Add to Cart" : "Unavailable"}
+          {isAdding ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Adding...
+            </>
+          ) : (
+            <>
+              <Plus className="h-4 w-4 mr-2" />
+              {isAvailable ? "Add to Cart" : "Unavailable"}
+            </>
+          )}
         </Button>
       </CardFooter>
     </Card>
@@ -424,11 +451,20 @@ export function MenuItemCard({
 
             <Button
               onClick={handleAddToCart}
-              disabled={!isAvailable}
+              disabled={!isAvailable || isAdding}
               className="w-full"
             >
-              <Plus className="h-4 w-4 mr-2" />
-              {isAvailable ? "Add to Cart" : "Unavailable"}
+              {isAdding ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Adding...
+                </>
+              ) : (
+                <>
+                  <Plus className="h-4 w-4 mr-2" />
+                  {isAvailable ? "Add to Cart" : "Unavailable"}
+                </>
+              )}
             </Button>
           </div>
         </DialogContent>

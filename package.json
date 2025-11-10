@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@craveup/storefront-sdk": "^1.0.1",
     "@hookform/resolvers": "^5.2.1",
     "@mdx-js/mdx": "^3.1.0",
     "@mdx-js/react": "^3.1.0",
@@ -59,6 +60,7 @@
     "react-day-picker": "^9.8.1",
     "react-dom": "19.1.0",
     "react-hook-form": "^7.61.1",
+    "react-scroll": "^1.9.3",
     "react-resizable-panels": "^3.0.4",
     "react-syntax-highlighter": "^15.6.1",
     "recharts": "2.15.4",
@@ -73,10 +75,12 @@
     "unist-builder": "^4.0.0",
     "unist-util-visit": "^5.0.0",
     "vaul": "^1.1.2",
-    "zod": "^4.0.14"
+    "zod": "^4.0.14",
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@types/react-scroll": "^1.8.10",
     "@tailwindcss/postcss": "^4",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",

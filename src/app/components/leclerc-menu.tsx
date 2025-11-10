@@ -1,273 +1,161 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { MenuItemCard } from "@/components/ui/menu-item-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { useCart } from "../providers/cart-provider";
+import type { MenuItem } from "../types";
 import { Button } from "@/components/ui/button";
-import { fetchProducts } from "@/lib/api";
-import type { Product } from "@/lib/api";
+import useMenus from "@/hooks/useMenus";
+import type { BundleCategory } from "@/types/menus";
+import type { Product } from "@/types/menu-types";
+import {
+  deriveCalories,
+  stripCaloriesFromDescription,
+} from "@/lib/menu-normalizers";
 
 interface LeclercMenuProps {
   isHomePage?: boolean;
 }
 
-// Helper function to get image path based on product name and category
-const getImagePath = (name: string, category: string): string => {
-  // Map of product names to actual image filenames based on public/images structure
-  const imageMap: Record<string, string> = {
-    // Cookies (signature folder)
-    "Classic Chocolate Chip":
-      "/images/leclerc-bakery/signature/choc-chip-walnut.webp",
-    "Double Dark Chocolate":
-      "/images/leclerc-bakery/signature/dark-choc-chip.webp",
-    "Oatmeal Raisin": "/images/leclerc-bakery/signature/oatmeal-raisin.webp",
-    "Peanut Butter Dream": "/images/leclerc-bakery/signature/pb-choc-chip.webp",
+const toMenuCategory = (categoryName: string): MenuItem["category"] => {
+  const normalized = categoryName.toLowerCase();
+  if (normalized.includes("pastr")) return "pastries";
+  if (
+    normalized.includes("bread") ||
+    normalized.includes("loaf") ||
+    normalized.includes("baguette")
+  ) {
+    return "breads";
+  }
+  return "cookies";
+};
 
-    // Pastries (menu folder)
-    "Butter Croissant": "/images/leclerc-bakery/menu/butter-croissant.webp",
-    "Pain au Chocolat": "/images/leclerc-bakery/menu/pain-au-chocolat.webp",
-    "Almond Croissant": "/images/leclerc-bakery/menu/almond-croissant.webp",
-    "Fruit Danish": "/images/leclerc-bakery/menu/fruit-danish.webp",
-    Palmier: "/images/leclerc-bakery/menu/palmier.webp",
-    Éclair: "/images/leclerc-bakery/menu/eclair.webp",
+type ProductWithTags = Product & { tags?: string[] };
 
-    // Breads (menu folder)
-    "Sourdough Loaf": "/images/leclerc-bakery/menu/sourdough-loaf.webp",
-    "French Baguette": "/images/leclerc-bakery/menu/french-baguette.webp",
-    "Whole Wheat Country":
-      "/images/leclerc-bakery/menu/whole-wheat-country.webp",
-    "Olive Rosemary": "/images/leclerc-bakery/menu/olive-rosemary.webp",
-    Brioche: "/images/leclerc-bakery/menu/brioche.webp",
-    Multigrain: "/images/leclerc-bakery/menu/multigrain.webp",
+const getProductTags = (product: Product): string[] => {
+  const rawTags = (product as ProductWithTags).tags;
+  return Array.isArray(rawTags) ? rawTags : [];
+};
+
+const mapProduct = (product: Product, categoryName: string): MenuItem => {
+  const numericPrice =
+    typeof product.price === "string"
+      ? parseFloat(product.price)
+      : product.price ?? 0;
+  const tags = getProductTags(product);
+  return {
+    id: product.id,
+    name: product.name,
+    description: stripCaloriesFromDescription(product.description),
+    price: numericPrice,
+    image: product.images?.[0] ?? null,
+    calories: deriveCalories(product.name, product.description),
+    category: toMenuCategory(categoryName),
+    isPopular: tags.some((tag) => tag.toLowerCase().includes("popular")),
+    isNew: tags.some((tag) => tag.toLowerCase().includes("new")),
   };
-
-  // Return mapped image or fallback based on category
-  return (
-    imageMap[name] || `/images/leclerc-bakery/signature/choc-chip-walnut.webp`
-  );
 };
 
 export function LeclercMenu({ isHomePage = false }: LeclercMenuProps) {
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
-  const [apiProducts, setApiProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [useApi, setUseApi] = useState(true);
   const { addToCart } = useCart();
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
+  const { data, isLoading, error } = useMenus();
 
-  const locationId = process.env.NEXT_PUBLIC_LOCATION_ID;
-  if (!locationId) {
-    throw new Error("NEXT_PUBLIC_LOCATION_ID environment variable is required");
-  }
-
-  // Helper function to determine category from product name
-  const getCategoryFromName = (name: string) => {
-    if (
-      name.toLowerCase().includes("cookie") ||
-      name.toLowerCase().includes("chip") ||
-      name.toLowerCase().includes("oatmeal") ||
-      name.toLowerCase().includes("snickerdoodle") ||
-      name.toLowerCase().includes("peanut butter") ||
-      name.toLowerCase().includes("macadamia")
-    ) {
-      return "cookies";
-    }
-    if (
-      name.toLowerCase().includes("croissant") ||
-      name.toLowerCase().includes("pain") ||
-      name.toLowerCase().includes("danish") ||
-      name.toLowerCase().includes("palmier") ||
-      name.toLowerCase().includes("éclair")
-    ) {
-      return "pastries";
-    }
-    if (
-      name.toLowerCase().includes("loaf") ||
-      name.toLowerCase().includes("baguette") ||
-      name.toLowerCase().includes("wheat") ||
-      name.toLowerCase().includes("olive") ||
-      name.toLowerCase().includes("brioche") ||
-      name.toLowerCase().includes("multigrain")
-    ) {
-      return "breads";
-    }
-    return "cookies"; // default
-  };
+  const categories: BundleCategory[] = useMemo(() => {
+    const menu = data?.menus?.[0];
+    return (menu?.categories ?? []) as BundleCategory[];
+  }, [data]);
 
   useEffect(() => {
-    const loadProducts = async () => {
-      try {
-        setLoading(true);
-        const products = await fetchProducts(locationId);
-
-        // Add category to products based on name
-        const productsWithCategories = products.map((product) => ({
-          ...product,
-          category: getCategoryFromName(product.name),
-        }));
-
-        setApiProducts(productsWithCategories);
-
-        // Extract unique categories from categorized products
-        const uniqueCategories = [
-          ...new Set(productsWithCategories.map((p) => p.category)),
-        ].filter(Boolean);
-        setCategories(uniqueCategories);
-
-        // Set first category as default selected
-        if (uniqueCategories.length > 0) {
-          setSelectedCategory(uniqueCategories[0]);
-        }
-        setUseApi(true);
-      } catch (error) {
-        console.warn(
-          "Failed to load products from API, using fallback data:",
-          error
-        );
-        setUseApi(false);
-        // Fallback categories
-        setCategories(["cookies", "pastries", "breads"]);
-        setSelectedCategory("cookies");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadProducts();
-  }, [locationId]);
-
-  // Get products for selected category
-  const getProductsForCategory = (category: string) => {
-    if (!useApi || apiProducts.length === 0) {
-      // Fallback to local data if API fails
-      const { menuItems } = require("../data/menu-items");
-      return menuItems
-        .filter((item: any) => item.category === category)
-        .map((item: any) => ({
-          id: item.id,
-          name: item.name,
-          description: item.description,
-          price: item.price,
-          image: item.image || getImagePath(item.name, item.category),
-          category: item.category,
-          calories: item.calories,
-          isPopular: item.isPopular || false,
-          isNew: item.isNew || false,
-        }));
+    if (!categories.length) return;
+    if (!selectedCategoryId || !categories.some((c) => c.id === selectedCategoryId)) {
+      setSelectedCategoryId(categories[0].id);
     }
+  }, [categories, selectedCategoryId]);
 
-    // Use API products
-    return apiProducts
-      .filter((product) => product.category === category)
-      .map((product) => ({
-        id: product._id || product.id,
-        name: product.name,
-        description: product.description,
-        price:
-          typeof product.price === "string"
-            ? parseFloat(product.price)
-            : product.price,
-        image:
-          product.images?.[0] ||
-          product.images ||
-          getImagePath(product.name, product.category || "cookies"),
-        category: product.category,
-        calories: getCaloriesFromName(product.name),
-        isPopular:
-          product.name.includes("Croissant") ||
-          product.name.includes("Sourdough"),
-        isNew: product.name.includes("Danish"),
-      }));
+  const getProductsForCategory = (categoryId: string): MenuItem[] => {
+    const category = categories.find((entry) => entry.id === categoryId);
+    if (!category) return [];
+    return (category.products ?? []).map((product) =>
+      mapProduct(product, category.name),
+    );
   };
 
-  // Helper function to get calories from product name
-  const getCaloriesFromName = (name: string) => {
-    const calorieMap: Record<string, number> = {
-      "Classic Chocolate Chip": 320,
-      "Double Dark Chocolate": 340,
-      "Oatmeal Raisin": 290,
-      "Peanut Butter Dream": 330,
-      "White Chocolate Macadamia": 350,
-      Snickerdoodle: 280,
-      "Butter Croissant": 270,
-      "Pain au Chocolat": 320,
-      "Almond Croissant": 340,
-      "Fruit Danish": 310,
-      Palmier: 240,
-      Éclair: 290,
-      "Sourdough Loaf": 120,
-      "French Baguette": 110,
-      "Whole Wheat Country": 130,
-      "Olive Rosemary": 140,
-      Brioche: 150,
-      Multigrain: 125,
-    };
-    return calorieMap[name] || 300;
-  };
+  const hasError = Boolean(error);
 
   return (
     <section id="menu" className="py-16 bg-background relative">
       <div className="container mx-auto px-4">
-        {/* Header */}
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold text-foreground mb-4">Our Menu</h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             From our signature chocolate chip walnut to seasonal favorites, each
             cookie is made with the finest ingredients and lots of love.
           </p>
-          {useApi && (
+          {!isLoading && !hasError && categories.length > 0 && (
             <div className="mt-4 text-sm text-green-600 dark:text-green-400">
-              ✓ Connected to CraveUp API
+              Connected to CraveUp API
             </div>
           )}
         </div>
 
-        {loading ? (
+        {isLoading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
             <p className="text-muted-foreground">Loading menu...</p>
           </div>
+        ) : hasError ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">
+              We couldn&rsquo;t load the live menu right now. Please try again in
+              a moment.
+            </p>
+          </div>
+        ) : categories.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">No menu items available.</p>
+          </div>
         ) : (
           <>
-            {/* Category Tabs */}
-            <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
-              <TabsList
-                className={`grid w-full max-w-md mx-auto grid-cols-${categories.length} mb-12 relative z-10`}
-              >
+            <Tabs
+              value={selectedCategoryId}
+              onValueChange={setSelectedCategoryId}
+            >
+              <TabsList className="flex flex-wrap items-center justify-center gap-2 mb-12">
                 {categories.map((category) => (
-                  <TabsTrigger key={category} value={category}>
-                    {category.charAt(0).toUpperCase() + category.slice(1)}
+                  <TabsTrigger key={category.id} value={category.id}>
+                    {category.name}
                   </TabsTrigger>
                 ))}
               </TabsList>
-              {/* Products for selected category */}
+
               {categories.map((category) => (
                 <TabsContent
-                  key={category}
-                  value={category}
+                  key={category.id}
+                  value={category.id}
                   className="mt-0 relative z-0"
                 >
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {(isHomePage
-                      ? getProductsForCategory(category).slice(0, 6)
-                      : getProductsForCategory(category)
-                    ).map((item: any) => (
+                      ? getProductsForCategory(category.id).slice(0, 6)
+                      : getProductsForCategory(category.id)
+                    ).map((item) => (
                       <MenuItemCard
                         key={item.id}
                         variant="detailed"
                         name={item.name}
                         description={item.description}
                         price={item.price}
-                        image={item.image}
+                        image={item.image ?? undefined}
                         calories={item.calories}
                         isPopular={item.isPopular}
                         isNew={item.isNew}
                         isAvailable={true}
                         showNutrition={true}
-                        onAddToCart={() => {
+                        onAddToCart={() =>
                           addToCart({
                             ...item,
                             options: {
@@ -275,8 +163,8 @@ export function LeclercMenu({ isHomePage = false }: LeclercMenuProps) {
                               packaging: "standard" as const,
                               giftBox: false,
                             },
-                          });
-                        }}
+                          })
+                        }
                       />
                     ))}
                   </div>
@@ -284,7 +172,6 @@ export function LeclercMenu({ isHomePage = false }: LeclercMenuProps) {
               ))}
             </Tabs>
 
-            {/* View Full Menu Button - appears below product photos on home page */}
             {isHomePage && (
               <div className="text-center mt-12">
                 <Link href="/menu">
@@ -296,7 +183,6 @@ export function LeclercMenu({ isHomePage = false }: LeclercMenuProps) {
               </div>
             )}
 
-            {/* Additional Options */}
             {!isHomePage && (
               <div className="mt-16 bg-muted/30 rounded-2xl p-8">
                 <h3 className="text-2xl font-bold text-foreground mb-6">

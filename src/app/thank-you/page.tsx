@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { LeclercHeader } from "../components/leclerc-header";
 import { LeclercFooter } from "../components/leclerc-footer";
 import { CheckCircle, Star } from "lucide-react";
+import { clearCartIdsForLocation } from "@/lib/local-storage";
+import { location_Id as DEFAULT_LOCATION_ID } from "@/constants";
 
 const ThankYouContent = () => {
   const searchParams = useSearchParams();
@@ -14,18 +16,15 @@ const ThankYouContent = () => {
   const [hoveredRating, setHoveredRating] = useState(0);
 
   const displayName = searchParams.get("displayName") || "Restaurant";
-  const locationId = searchParams.get("locationId");
+  const locationId = searchParams.get("locationId") ?? DEFAULT_LOCATION_ID;
   const cartId = searchParams.get("cartId");
 
   useEffect(() => {
-    // Clear cart from localStorage since order is complete
-    // Using the same keys as the cart provider
     if (typeof window !== "undefined") {
-      localStorage.removeItem("leclerc-cart-items");
-      localStorage.removeItem("leclerc-cart-id");
       localStorage.removeItem("crave_cart_data"); // Also clear the API cart data
     }
-  }, []);
+    clearCartIdsForLocation(locationId);
+  }, [locationId]);
 
   const handleRatingClick = (value: number) => {
     setRating(value);
