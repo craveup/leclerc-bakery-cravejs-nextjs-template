@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState, Suspense } from "react";
+import React, { useEffect, useMemo, useState, Suspense, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, ShoppingCart } from "lucide-react";
 import Image from "next/image";
@@ -21,7 +21,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { location_Id as DEFAULT_LOCATION_ID } from "@/constants";
+import {
+  CHECKOUT_BASE_URL,
+  location_Id as DEFAULT_LOCATION_ID,
+} from "@/constants";
 import { ResponsiveSheet } from "@/components/ResponsiveSheet";
 import type { StorefrontCart, CartModifierGroup } from "@/types/cart-types";
 
@@ -49,6 +52,18 @@ interface CartSidebarProps {
   cartItems?: SidebarCartItem[];
   onCheckout?: (checkoutUrl?: string) => void | Promise<void>;
 }
+
+const getReturnUrl = () => {
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return window.location.origin;
+  }
+  return process.env.NEXT_PUBLIC_SITE_URL ?? null;
+};
+
+const sanitizeBaseUrl = (value: string | null | undefined) => {
+  if (!value) return null;
+  return value.replace(/\/+$/, "");
+};
 
 function formatSelections(
   groups: CartModifierGroup[] | undefined
@@ -158,7 +173,72 @@ function CartSidebarContent({
   } = useCart();
 
   const locationId = resolvedLocationId ?? DEFAULT_LOCATION_ID;
-  const checkoutUrl = cart?.checkoutUrl?.trim() || null;
+  const storefrontLocationId = cart?.locationId ?? locationId ?? null;
+
+  const hostedCheckoutUrl = useMemo(() => {
+    if (!storefrontLocationId || !cartId) return null;
+    const base = sanitizeBaseUrl(CHECKOUT_BASE_URL);
+    if (!base) return null;
+
+    try {
+      const url = new URL(`${base}/${storefrontLocationId}/checkout`);
+      url.searchParams.set("cartId", cartId);
+      const returnTarget = getReturnUrl();
+      if (returnTarget) {
+        url.searchParams.set("returnUrl", returnTarget);
+      }
+      return url.toString();
+    } catch {
+      return null;
+    }
+  }, [cartId, storefrontLocationId]);
+
+  const internalCheckoutUrl = useMemo(() => {
+    if (!storefrontLocationId || !cartId) return null;
+    return `/locations/${storefrontLocationId}/carts/${cartId}/checkout`;
+  }, [storefrontLocationId, cartId]);
+
+  const normalizeCheckoutUrl = useCallback(
+    (candidate?: string | null) => {
+      if (!candidate) return null;
+      const runtimeReturnUrl = getReturnUrl();
+      const baseOrigin = runtimeReturnUrl ?? "http://localhost:3000";
+
+      try {
+        const isAbsolute = /^https?:\/\//i.test(candidate);
+        const url = isAbsolute
+          ? new URL(candidate)
+          : new URL(candidate, baseOrigin);
+
+        if (cartId) {
+          url.searchParams.set("cartId", cartId);
+        }
+        if (runtimeReturnUrl) {
+          url.searchParams.set("returnUrl", runtimeReturnUrl);
+        }
+
+        return isAbsolute
+          ? url.toString()
+          : `${url.pathname}${url.search}${url.hash}`;
+      } catch {
+        return candidate;
+      }
+    },
+    [cartId],
+  );
+
+  const checkoutUrl = useMemo(() => {
+    return (
+      normalizeCheckoutUrl(hostedCheckoutUrl) ??
+      normalizeCheckoutUrl(cart?.checkoutUrl?.trim()) ??
+      normalizeCheckoutUrl(internalCheckoutUrl)
+    );
+  }, [
+    normalizeCheckoutUrl,
+    hostedCheckoutUrl,
+    cart?.checkoutUrl,
+    internalCheckoutUrl,
+  ]);
 
   const [busyLineId, setBusyLineId] = useState<string | null>(null);
   const [productIdToOpen, setProductIdToOpen] = useState<string>("");

@@ -9,6 +9,10 @@ export const GOOGLE_MAP_API_KEY =
   process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string;
 export const NEXT_PUBLIC_STOREFRONT_URL =
   process.env.NEXT_PUBLIC_STOREFRONT_URL ?? "";
+export const CHECKOUT_BASE_URL =
+  process.env.NEXT_PUBLIC_CHECKOUT_BASE_URL?.replace(/\/$/, "") ||
+  NEXT_PUBLIC_STOREFRONT_URL?.replace(/\/$/, "") ||
+  "";
 
 export const location_Id = process.env.NEXT_PUBLIC_LOCATION_ID as string;
 export const DEFAULT_FULFILLMENT_METHOD = "takeout";
