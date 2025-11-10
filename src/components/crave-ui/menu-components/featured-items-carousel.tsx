@@ -5,7 +5,7 @@ import type React from "react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Loader2 } from "lucide-react";
 import Image from "next/image";
 
 interface FoodItem {
@@ -19,7 +19,7 @@ interface FoodItem {
 interface FeaturedItemsCarouselProps {
   title?: string;
   items?: FoodItem[];
-  onAddToCart?: (item: FoodItem) => void;
+  onAddToCart?: (item: FoodItem) => void | Promise<void>;
   onItemClick?: (item: FoodItem) => void;
 }
 
@@ -84,6 +84,7 @@ export default function FeaturedItemsCarousel({
   const [scrollPosition, setScrollPosition] = useState(0);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
+  const [addingItemId, setAddingItemId] = useState<string | null>(null);
 
   const handleScroll = (direction: "left" | "right") => {
     const container = document.getElementById("carousel-container");
@@ -107,9 +108,18 @@ export default function FeaturedItemsCarousel({
     );
   };
 
-  const handleAddToCart = (item: FoodItem, e: React.MouseEvent) => {
+  const handleAddToCart = async (
+    item: FoodItem,
+    e: React.MouseEvent<HTMLButtonElement>
+  ) => {
     e.stopPropagation();
-    onAddToCart?.(item);
+    if (!onAddToCart || addingItemId) return;
+    setAddingItemId(item.id);
+    try {
+      await Promise.resolve(onAddToCart(item));
+    } finally {
+      setAddingItemId(null);
+    }
   };
 
   return (
@@ -189,11 +199,16 @@ export default function FeaturedItemsCarousel({
                     <Button
                       size="icon"
                       variant="secondary"
-                      className="h-8 w-8 bg-background hover:bg-muted/50 shadow-md"
+                      className="h-8 w-8 bg-background hover:bg-muted/50 shadow-md text-foreground"
                       onClick={(e) => handleAddToCart(item, e)}
                       aria-label="Add item to cart"
+                      disabled={addingItemId === item.id}
                     >
-                      <Plus className="h-4 w-4" />
+                      {addingItemId === item.id ? (
+                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                      ) : (
+                        <Plus className="h-4 w-4" />
+                      )}
                     </Button>
                   </div>
                 </div>

@@ -136,6 +136,16 @@ export default function LeclercMenuPage() {
     count: category.products?.length ?? 0,
   }));
 
+  const productCategoryMap = useMemo(() => {
+    const map = new Map<string, string>();
+    categories.forEach((category) => {
+      category.products?.forEach((product) => {
+        map.set(product.id, category.name);
+      });
+    });
+    return map;
+  }, [categories]);
+
   const currentItems = useMemo<MenuItem[]>(() => {
     const category = categories.find((cat) => cat.id === selectedCategoryId);
     if (!category) return [];
@@ -144,21 +154,38 @@ export default function LeclercMenuPage() {
     );
   }, [categories, selectedCategoryId]);
 
-  const featuredItems = useMemo(() => {
+  const featuredData = useMemo(() => {
     const menuFeatured = (data?.popularProducts ?? []) as Product[];
-    const raw =
+    const rawSource =
       menuFeatured.length > 0
         ? menuFeatured
         : categories.flatMap((category) => category.products ?? []);
 
-    return raw.slice(0, 8).map((product) => {
+    const cards: Array<{
+      id: string;
+      name: string;
+      price: string;
+      imageUrl: string;
+      badge?: string;
+    }> = [];
+    const lookup: Record<string, MenuItem> = {};
+
+    rawSource.slice(0, 8).forEach((product) => {
       const priceValue =
         typeof product.price === "string"
           ? parseFloat(product.price)
           : product.price ?? 0;
       const tags = getProductTags(product);
+      const categoryName =
+        productCategoryMap.get(product.id) ??
+        categories.find((category) =>
+          category.products?.some((p) => p.id === product.id),
+        )?.name ??
+        "Featured";
+      const normalized = normalizeProduct(product, categoryName);
+      lookup[product.id] = normalized;
 
-      return {
+      cards.push({
         id: product.id,
         name: product.name,
         price: `$${priceValue.toFixed(2)}`,
@@ -166,9 +193,11 @@ export default function LeclercMenuPage() {
         badge:
           tags.find((tag) => tag.toLowerCase().includes("popular")) ||
           undefined,
-      };
+      });
     });
-  }, [categories, data]);
+
+    return { cards, lookup };
+  }, [categories, data, productCategoryMap]);
 
   const hasError = Boolean(error);
 
@@ -206,9 +235,24 @@ export default function LeclercMenuPage() {
           </div>
         </div>
 
-        {featuredItems.length > 0 && (
+        {featuredData.cards.length > 0 && (
           <section className="max-w-7xl mx-auto px-4 sm:px-6 pb-8">
-            <FeaturedItemsCarousel title="Featured Items" items={featuredItems} />
+            <FeaturedItemsCarousel
+              title="Featured Items"
+              items={featuredData.cards}
+              onAddToCart={(item) => {
+                const menuItem = featuredData.lookup[item.id];
+                if (!menuItem) return;
+                return addToCart({
+                  ...menuItem,
+                  options: {
+                    warming: "room-temp" as const,
+                    packaging: "standard" as const,
+                    giftBox: false,
+                  },
+                });
+              }}
+            />
           </section>
         )}
 
