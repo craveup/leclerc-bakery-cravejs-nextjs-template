@@ -615,16 +615,16 @@ function CartSidebarContent({
                           tabIndex={0}
                         >
                           {showRecSkeleton ? (
-                            <Card className="gap-0 overflow-hidden p-0 animate-pulse">
+                            <Card className="gap-0 overflow-hidden p-0 animate-pulse flex flex-col h-full">
                               <div className="relative aspect-4/3 w-full bg-muted" />
-                              <CardHeader className="p-4">
+                              <CardHeader className="p-4 flex flex-col flex-1 justify-between">
                                 <div className="h-4 bg-muted rounded w-3/4 mb-2" />
                                 <div className="h-4 bg-muted rounded w-1/3" />
                               </CardHeader>
                             </Card>
                           ) : (
                             <Card
-                              className="gap-0 overflow-hidden p-0 transition-all hover:shadow-md bg-background"
+                              className="gap-0 overflow-hidden p-0 transition-all hover:shadow-md bg-background flex h-full flex-col"
                               onClick={() =>
                                 item && setProductIdToOpen(item.id)
                               }
@@ -641,11 +641,11 @@ function CartSidebarContent({
                                 />
                               </div>
 
-                              <CardHeader className="p-4">
-                                <CardTitle className="text-sm line-clamp-2">
+                              <CardHeader className="p-4 flex flex-col flex-1">
+                                <CardTitle className="text-sm line-clamp-2 min-h-[2.75rem]">
                                   {item!.name}
                                 </CardTitle>
-                                <CardDescription className="font-semibold">
+                                <CardDescription className="font-semibold mt-auto">
                                   {currency(item!.price)}
                                 </CardDescription>
                               </CardHeader>
