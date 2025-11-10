@@ -51,7 +51,7 @@ interface CartSidebarProps {
 }
 
 function formatSelections(
-  groups: CartModifierGroup[] | undefined,
+  groups: CartModifierGroup[] | undefined
 ): string | undefined {
   if (!Array.isArray(groups) || groups.length === 0) return undefined;
 
@@ -84,7 +84,7 @@ function formatSelections(
 }
 
 function mapCartResponseToItems(
-  cart: StorefrontCart | null | undefined,
+  cart: StorefrontCart | null | undefined
 ): SidebarCartItem[] {
   if (!cart?.items?.length) return [];
 
@@ -120,12 +120,15 @@ type ApiProduct =
   | any;
 
 function mapProductsToSuggested(
-  data: ApiProduct[] | undefined,
+  data: ApiProduct[] | undefined
 ): SuggestedItem[] {
   if (!Array.isArray(data)) return [];
   const pickImage = (p: ApiProduct): string | null =>
     absolutizeImage(
-      p.imageUrl ?? p.mainImageUrl ?? (Array.isArray(p.images) && p.images[0]) ?? p.image,
+      p.imageUrl ??
+        p.mainImageUrl ??
+        (Array.isArray(p.images) && p.images[0]) ??
+        p.image
     );
 
   return data.map((p) => ({
@@ -199,7 +202,7 @@ function CartSidebarContent({
     recommendationsEndpoint,
     {
       shouldFetch: Boolean(locationId && cartId),
-    },
+    }
   );
 
   const liveSuggested = useMemo(() => mapProductsToSuggested(recRaw), [recRaw]);
@@ -242,7 +245,7 @@ function CartSidebarContent({
     try {
       await patchData(
         `/api/v1/locations/${locationId}/carts/${cartId}/cart-item/${lineId}/quantity`,
-        { quantity: nextQty },
+        { quantity: nextQty }
       );
       await mutate();
       return true;
@@ -257,7 +260,7 @@ function CartSidebarContent({
   const getQuantityToastMessage = (
     name: string | undefined,
     previousQty: number,
-    nextQty: number,
+    nextQty: number
   ) => {
     const itemLabel = name?.trim() || "Item";
     if (nextQty <= 0) return `${itemLabel} removed from your cart`;
@@ -323,7 +326,7 @@ function CartSidebarContent({
     (nextOpen: boolean) => {
       if (!nextOpen) onClose();
     },
-    [onClose],
+    [onClose]
   );
 
   const sheetTitle = "YOUR ORDER";
@@ -333,7 +336,7 @@ function CartSidebarContent({
     <div className="w-full space-y-4 p-2 sm:p-4 md:p-4">
       <Button
         onClick={handleCheckoutClick}
-        className="w-full h-14 text-base font-heading-h6 tracking-wider bg-backgroundprimary hover:bg-backgroundprimary/90 text-textinverse rounded-2xl disabled:opacity-60"
+        className="w-full h-14 text-base bg-[#EFE7D2] rounded-2xl disabled:opacity-60"
         size="lg"
         data-testid="CheckoutButton"
         disabled={!apiItems.length}
@@ -355,7 +358,7 @@ function CartSidebarContent({
       titleClassName="font-heading-h4 text-textdefault text-lg tracking-wider"
       headerClassName="px-6 py-4 border-b border-borderdefault"
       description={sheetDescription}
-      className="flex h-full flex-col bg-backgrounddefault p-0 md:max-w-[500px]"
+      className="flex h-full flex-col p-0 md:max-w-[500px]"
       innerContentClassName="flex flex-col p-0"
       hideMainBtn
       hideCloseBtn
@@ -454,7 +457,7 @@ function CartSidebarContent({
                               void handleIncrease(
                                 item.id,
                                 item.quantity,
-                                item.name,
+                                item.name
                               )
                             }
                             onDecrease={() => {
@@ -462,13 +465,13 @@ function CartSidebarContent({
                                 void handleRemove(
                                   item.id,
                                   item.quantity,
-                                  item.name,
+                                  item.name
                                 );
                               } else {
                                 void handleDecrease(
                                   item.id,
                                   item.quantity,
-                                  item.name,
+                                  item.name
                                 );
                               }
                             }}

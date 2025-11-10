@@ -283,7 +283,7 @@ export default function LeclercLocationsPage() {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex gap-2 pt-2">
+                {/* <div className="flex gap-2 pt-2">
                   <Button
                     className="flex-1 text-white dark:text-white"
                     onClick={() => handleOrderFromLocation(location.id)}
@@ -302,7 +302,7 @@ export default function LeclercLocationsPage() {
                   >
                     <ClientIcon name="Navigation" className="h-4 w-4" />
                   </Button>
-                </div>
+                </div> */}
               </CardContent>
             </Card>
           ))}
