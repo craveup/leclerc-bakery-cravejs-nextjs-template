@@ -124,9 +124,13 @@ export function LeclercMenu({ isHomePage = false }: LeclercMenuProps) {
               value={selectedCategoryId}
               onValueChange={setSelectedCategoryId}
             >
-              <TabsList className="flex flex-wrap items-center justify-center gap-2 mb-12">
+              <TabsList className="mb-12 flex w-full flex-wrap justify-center gap-2">
                 {categories.map((category) => (
-                  <TabsTrigger key={category.id} value={category.id}>
+                  <TabsTrigger
+                    key={category.id}
+                    value={category.id}
+                    className="capitalize"
+                  >
                     {category.name}
                   </TabsTrigger>
                 ))}
