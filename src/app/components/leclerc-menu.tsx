@@ -55,7 +55,7 @@ export function LeclercMenu({ isHomePage = false }: LeclercMenuProps) {
   const [apiProducts, setApiProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [useApi, setUseApi] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { addToCart } = useCart();
 
   const locationId = process.env.NEXT_PUBLIC_LOCATION_ID;
@@ -121,16 +121,14 @@ export function LeclercMenu({ isHomePage = false }: LeclercMenuProps) {
         if (uniqueCategories.length > 0) {
           setSelectedCategory(uniqueCategories[0]);
         }
-        setUseApi(true);
+        setErrorMessage(null);
       } catch (error) {
-        console.warn(
-          "Failed to load products from API, using fallback data:",
-          error
+        console.warn("Failed to load products from API", error);
+        setErrorMessage(
+          "We couldn't load the live menu right now. Please try again in a moment.",
         );
-        setUseApi(false);
-        // Fallback categories
-        setCategories(["cookies", "pastries", "breads"]);
-        setSelectedCategory("cookies");
+        setCategories([]);
+        setSelectedCategory("");
       } finally {
         setLoading(false);
       }
@@ -141,25 +139,10 @@ export function LeclercMenu({ isHomePage = false }: LeclercMenuProps) {
 
   // Get products for selected category
   const getProductsForCategory = (category: string) => {
-    if (!useApi || apiProducts.length === 0) {
-      // Fallback to local data if API fails
-      const { menuItems } = require("../data/menu-items");
-      return menuItems
-        .filter((item: any) => item.category === category)
-        .map((item: any) => ({
-          id: item.id,
-          name: item.name,
-          description: item.description,
-          price: item.price,
-          image: item.image || getImagePath(item.name, item.category),
-          category: item.category,
-          calories: item.calories,
-          isPopular: item.isPopular || false,
-          isNew: item.isNew || false,
-        }));
+    if (!apiProducts.length) {
+      return [];
     }
 
-    // Use API products
     return apiProducts
       .filter((product) => product.category === category)
       .map((product) => ({
@@ -218,7 +201,7 @@ export function LeclercMenu({ isHomePage = false }: LeclercMenuProps) {
             From our signature chocolate chip walnut to seasonal favorites, each
             cookie is made with the finest ingredients and lots of love.
           </p>
-          {useApi && (
+          {!loading && !errorMessage && (
             <div className="mt-4 text-sm text-green-600 dark:text-green-400">
               ✓ Connected to CraveUp API
             </div>
@@ -229,6 +212,14 @@ export function LeclercMenu({ isHomePage = false }: LeclercMenuProps) {
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
             <p className="text-muted-foreground">Loading menu...</p>
+          </div>
+        ) : errorMessage ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">{errorMessage}</p>
+          </div>
+        ) : categories.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">No menu items available.</p>
           </div>
         ) : (
           <>

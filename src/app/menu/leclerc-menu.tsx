@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { LeclercHeader } from "../components/leclerc-header";
 import { LeclercCart } from "../components/leclerc-cart";
 import { LeclercFooter } from "../components/leclerc-footer";
@@ -13,24 +13,16 @@ import { CategoryNavigation } from "@/components/ui/category-navigation";
 import FeaturedItemsCarousel from "@/components/crave-ui/menu-components/featured-items-carousel";
 
 export default function LeclercMenuPage() {
-  const { isCartOpen, closeCart, openCart, addToCart } = useCart();
+  const { isCartOpen, closeCart, addToCart } = useCart();
   const [selectedCategory, setSelectedCategory] = useState("cookies");
   const [apiProducts, setApiProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [useApi, setUseApi] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const locationId = process.env.NEXT_PUBLIC_LOCATION_ID;
   if (!locationId) {
     throw new Error("NEXT_PUBLIC_LOCATION_ID environment variable is required");
   }
-
-  const handleCartOpenChange = (open: boolean) => {
-    if (open) {
-      openCart();
-    } else {
-      closeCart();
-    }
-  };
 
   useEffect(() => {
     const loadProducts = async () => {
@@ -38,13 +30,13 @@ export default function LeclercMenuPage() {
         setLoading(true);
         const products = await fetchProducts(locationId);
         setApiProducts(products);
-        setUseApi(true);
+        setErrorMessage(null);
       } catch (error) {
-        console.warn(
-          "Failed to load products from API, using fallback data:",
-          error
+        console.warn("Failed to load products from API", error);
+        setErrorMessage(
+          "We couldn't load the live menu right now. Please try again shortly.",
         );
-        setUseApi(false);
+        setApiProducts([]);
       } finally {
         setLoading(false);
       }
@@ -53,80 +45,56 @@ export default function LeclercMenuPage() {
     loadProducts();
   }, [locationId]);
 
-  // Use API data if available, otherwise fall back to local data
-  const getMenuFromApi = () => {
-    if (useApi && apiProducts.length > 0) {
-      // Use API data with images
-      const menuItems = apiProducts.map((product: Product) => ({
-        id: product._id || product.id,
-        name: product.name,
-        description: product.description,
-        price: product.price,
-        image:
-          product.images?.[0] ||
-          "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=400&h=300&fit=crop",
-        category: getCategoryFromName(product.name),
-        calories: getCaloriesFromName(product.name),
-        isNew: product.name.includes("Danish"),
-        isPopular:
-          product.name.includes("Croissant") ||
-          product.name.includes("Sourdough"),
-        isGlutenFree: false,
-        featured:
-          product.name.includes("Croissant") ||
-          product.name.includes("Sourdough"),
-      }));
-
-      // Group items by category
-      const cookies = menuItems.filter(
-        (item: any) => item.category === "cookies"
-      );
-      const pastries = menuItems.filter(
-        (item: any) => item.category === "pastries"
-      );
-      const breads = menuItems.filter(
-        (item: any) => item.category === "breads"
-      );
-
+  const menuData = useMemo(() => {
+    if (!apiProducts.length) {
       return {
-        signature: cookies.filter((item: any) => item.featured),
-        seasonal: cookies.filter((item: any) => item.isNew),
-        limited: cookies.filter((item: any) => !item.isPopular && !item.isNew),
-        cookies,
-        pastries,
-        breads,
-        all: menuItems,
-      };
-    } else {
-      // Fall back to local data
-      const { menuItems } = require("../data/menu-items");
-
-      // Group items by category
-      const cookies = menuItems.filter(
-        (item: any) => item.category === "cookies"
-      );
-      const pastries = menuItems.filter(
-        (item: any) => item.category === "pastries"
-      );
-      const breads = menuItems.filter(
-        (item: any) => item.category === "breads"
-      );
-
-      return {
-        signature: cookies.filter(
-          (item: any) => item.tags?.includes("signature") || item.featured
-        ),
-        seasonal: cookies.filter((item: any) =>
-          item.tags?.includes("seasonal")
-        ),
-        limited: cookies.filter((item: any) => item.tags?.includes("limited")),
-        cookies,
-        pastries,
-        breads,
-        all: menuItems,
+        signature: [],
+        seasonal: [],
+        limited: [],
+        cookies: [],
+        pastries: [],
+        breads: [],
+        all: [],
       };
     }
-  };
+
+    const menuItems = apiProducts.map((product: Product) => ({
+      id: product._id || product.id,
+      name: product.name,
+      description: product.description,
+      price:
+        typeof product.price === "string"
+          ? parseFloat(product.price)
+          : product.price,
+      image:
+        product.images?.[0] ||
+        "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=400&h=300&fit=crop",
+      category: getCategoryFromName(product.name),
+      calories: getCaloriesFromName(product.name),
+      isNew: product.name.includes("Danish"),
+      isPopular:
+        product.name.includes("Croissant") ||
+        product.name.includes("Sourdough"),
+      isGlutenFree: false,
+      featured:
+        product.name.includes("Croissant") ||
+        product.name.includes("Sourdough"),
+    }));
+
+    const cookies = menuItems.filter((item: any) => item.category === "cookies");
+    const pastries = menuItems.filter((item: any) => item.category === "pastries");
+    const breads = menuItems.filter((item: any) => item.category === "breads");
+
+    return {
+      signature: cookies.filter((item: any) => item.featured),
+      seasonal: cookies.filter((item: any) => item.isNew),
+      limited: cookies.filter((item: any) => !item.isPopular && !item.isNew),
+      cookies,
+      pastries,
+      breads,
+      all: menuItems,
+    };
+  }, [apiProducts]);
 
   // Helper function to determine category from product name
   const getCategoryFromName = (name: string) => {
@@ -187,8 +155,7 @@ export default function LeclercMenuPage() {
     return calorieMap[name] || 300;
   };
 
-  const currentMenu = getMenuFromApi();
-  const featuredItems = currentMenu.all.filter((item: any) => item.featured);
+  const featuredItems = menuData.all.filter((item: any) => item.featured);
 
   // Transform featured items to carousel format
   const carouselItems = featuredItems.map((item: any) => ({
@@ -199,20 +166,33 @@ export default function LeclercMenuPage() {
     badge: item.isPopular ? "Popular" : item.isNew ? "New" : undefined,
   }));
 
-  const categories: MenuCategory[] = [
-    { id: "cookies", name: "Cookies", count: currentMenu.cookies.length },
-    { id: "pastries", name: "Pastries", count: currentMenu.pastries.length },
-    { id: "breads", name: "Artisan Breads", count: currentMenu.breads.length },
-  ];
+  const categories: MenuCategory[] = useMemo(
+    () => [
+      { id: "cookies", name: "Cookies", count: menuData.cookies.length },
+      { id: "pastries", name: "Pastries", count: menuData.pastries.length },
+      { id: "breads", name: "Artisan Breads", count: menuData.breads.length },
+    ].filter((entry) => entry.count > 0),
+    [menuData],
+  );
+
+  useEffect(() => {
+    if (!categories.length) {
+      return;
+    }
+    const hasSelected = categories.some((category) => category.id === selectedCategory);
+    if (!hasSelected) {
+      setSelectedCategory(categories[0].id);
+    }
+  }, [categories, selectedCategory]);
 
   const getItemsForCategory = (category: string) => {
     switch (category) {
       case "cookies":
-        return currentMenu.cookies;
+        return menuData.cookies;
       case "pastries":
-        return currentMenu.pastries;
+        return menuData.pastries;
       case "breads":
-        return currentMenu.breads;
+        return menuData.breads;
       default:
         return [];
     }
@@ -298,6 +278,10 @@ export default function LeclercMenuPage() {
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
               <p className="text-muted-foreground">Loading menu...</p>
             </div>
+          ) : errorMessage ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">{errorMessage}</p>
+            </div>
           ) : (
             <>
               {/* Menu Items for Selected Category */}
@@ -354,7 +338,6 @@ export default function LeclercMenuPage() {
       <LeclercCart
         isOpen={isCartOpen}
         onClose={closeCart}
-        onOpenChange={handleCartOpenChange}
       />
     </div>
   );

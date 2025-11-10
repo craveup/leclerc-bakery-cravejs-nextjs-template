@@ -10,15 +10,7 @@ import { LeclercFooter } from "./components/leclerc-footer"
 import { useCart } from "./providers/cart-provider"
 
 export default function LeclercBakeryPage() {
-  const { isCartOpen, closeCart, openCart } = useCart()
-
-  const handleCartOpenChange = (open: boolean) => {
-    if (open) {
-      openCart()
-    } else {
-      closeCart()
-    }
-  }
+  const { isCartOpen, closeCart } = useCart()
 
   return (
     <div className="min-h-screen bg-background">
@@ -36,7 +28,6 @@ export default function LeclercBakeryPage() {
       <LeclercCart 
         isOpen={isCartOpen}
         onClose={closeCart}
-        onOpenChange={handleCartOpenChange}
       />
     </div>
   )

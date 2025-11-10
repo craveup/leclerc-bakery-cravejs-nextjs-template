@@ -1,5 +1,5 @@
 // Restaurant API Client
-import { apiHeaders, endpoints, handleAPIResponse, CRAVEUP_API_BASE, CraveUpAPIError } from './config'
+import { apiHeaders, endpoints, handleAPIResponse, CRAVEUP_API_BASE, CraveUpAPIError } from "./config";
 import type {
   Location,
   Product,
@@ -32,15 +32,25 @@ export const fetchMenuItems = async (
 }
 
 export const fetchProducts = async (locationId: string): Promise<Product[]> => {
-  const response = await fetch(endpoints.products(locationId))
-  const products = await handleAPIResponse(response)
-  
-  // Ensure prices are numbers, not strings
-  return products.map((product: any) => ({
+  const response = await fetch(`/api/products?locationId=${locationId}`);
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: "Unknown error" }));
+    throw new CraveUpAPIError(response.status, error.message || "Failed to load products");
+  }
+  const data = await response.json();
+  const products: any[] = Array.isArray(data)
+    ? data
+    : Array.isArray(data?.products)
+    ? data.products
+    : [];
+  return products.map((product) => ({
     ...product,
-    price: typeof product.price === 'string' ? parseFloat(product.price) : product.price
-  }))
-}
+    price:
+      typeof product?.price === "string"
+        ? parseFloat(product.price)
+        : product?.price ?? 0,
+  }));
+};
 
 export const fetchPopularProducts = async (locationId: string): Promise<Product[]> => {
   const response = await fetch(endpoints.popularProducts(locationId), {
