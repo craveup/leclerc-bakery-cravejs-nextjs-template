@@ -87,7 +87,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const subtotal = cart?.subTotal ? Number.parseFloat(cart.subTotal) || 0 : 0;
   const tax = cart?.taxTotal ? Number.parseFloat(cart.taxTotal) || 0 : 0;
-  const total = cart?.orderTotal ? Number.parseFloat(cart.orderTotal) || 0 : 0;
+  const totalString =
+    cart?.orderTotalWithServiceFee ?? cart?.netSalesTotal ?? null;
+  const total = totalString ? Number.parseFloat(totalString) || 0 : subtotal + tax;
   const itemCount = cart?.totalQuantity ?? items.reduce((sum, item) => sum + item.quantity, 0);
 
   const clearError = useCallback(() => setError(null), []);

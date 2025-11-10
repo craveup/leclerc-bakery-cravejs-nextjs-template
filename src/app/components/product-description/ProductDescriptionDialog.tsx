@@ -1,5 +1,4 @@
 import * as React from "react";
-import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import {
   Dialog,
   DialogContent,
@@ -21,9 +20,7 @@ function ProductDescriptionDialog(props: ProductDescriptionProps) {
         <DialogPortal>
           <DialogOverlay className="fixed inset-0 bg-black/5 z-[1050]" />
           <DialogContent className="z-[1051] h-[90vh] overflow-hidden border-none p-0">
-            <VisuallyHidden>
-              <DialogTitle />
-            </VisuallyHidden>
+            <DialogTitle className="sr-only">Product details</DialogTitle>
             {props.productId && <ProductDescriptionScreen {...props} />}
           </DialogContent>
         </DialogPortal>
