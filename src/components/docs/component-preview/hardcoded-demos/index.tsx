@@ -4,7 +4,6 @@ import * as React from "react";
 
 // Import all demo components
 import { OrderSummaryDemo, orderSummaryDemoCode } from "./order-summary-demo";
-import { CheckoutFormDemo, checkoutFormDemoCode } from "./checkout-form-demo";
 
 // Type for hardcoded component info
 export interface HardcodedComponentInfo {
@@ -16,11 +15,7 @@ export interface HardcodedComponentInfo {
 export const hardcodedDemos: Record<string, HardcodedComponentInfo> = {
   "order-summary-demo": {
     component: OrderSummaryDemo,
-    code: orderSummaryDemoCode
-  },
-  "checkout-form": {
-    component: CheckoutFormDemo,
-    code: checkoutFormDemoCode
+    code: orderSummaryDemoCode,
   },
   // More demos will be added here as we extract them
 };

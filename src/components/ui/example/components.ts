@@ -234,29 +234,6 @@ export default function OrderSummaryDemo() {
     source: "",
     files: ["registry/default/example/nutritional-info-modal-demo.tsx"],
   },
-  "checkout-form": {
-    name: "checkout-form",
-    type: "components:example",
-    component: lazy(() => import("./checkout-form-demo")),
-    source: "",
-    files: ["registry/default/example/checkout-form-demo.tsx"],
-  },
-  "promo-code-input": {
-    name: "promo-code-input",
-    type: "components:example",
-    registryDependencies: ["promo-code-input"],
-    component: lazy(() => import("./promo-code-input-demo")),
-    source: "",
-    files: ["registry/default/example/promo-code-input-demo.tsx"],
-  },
-  "order-type-toggle": {
-    name: "order-type-toggle",
-    type: "components:example",
-    registryDependencies: ["order-type-toggle"],
-    component: lazy(() => import("./order-type-toggle-demo")),
-    source: "",
-    files: ["registry/default/example/order-type-toggle-demo.tsx"],
-  },
   "address-picker": {
     name: "address-picker",
     type: "components:example",
@@ -578,53 +555,6 @@ export default function CartSidebarDemo() {
   )
 }`,
     files: ["registry/default/example/cart-sidebar-demo.tsx"],
-  },
-  "checkout-page-demo": {
-    name: "checkout-page-demo",
-    type: "components:example",
-    registryDependencies: ["checkout-page"],
-    component: lazy(() => import("./checkout-page-demo")),
-    source: `"use client"
-
-import { IPhoneMockup } from "@/components/ui/iphone-mockup"
-import CheckoutPage from "../ui/checkout/checkout-page"
-
-export default function CheckoutPageDemo() {
-  const handleBackToStore = () => {
-    console.log("Back to store clicked")
-  }
-
-  const handlePlaceOrder = (orderData: any) => {
-    console.log("Order placed:", orderData)
-  }
-
-  return (
-    <div className="w-full max-w-sm mx-auto">
-      <IPhoneMockup variant="pro" color="black">
-        <div className="h-full flex flex-col relative bg-gray-50 dark:bg-gray-900">
-          {/* Status Bar */}
-          <div className="flex justify-between items-center px-6 py-3 bg-white dark:bg-gray-800">
-            <span className="text-sm font-semibold text-black dark:text-white">9:41</span>
-            <div className="flex items-center gap-1">
-              <div className="w-4 h-2 border border-black dark:border-white rounded-sm">
-                <div className="w-3 h-1 bg-black dark:bg-white rounded-sm m-0.5" />
-              </div>
-            </div>
-          </div>
-
-          {/* Checkout Page Content */}
-          <div className="flex-1 overflow-hidden">
-            <CheckoutPage
-              onBackToStore={handleBackToStore}
-              onPlaceOrder={handlePlaceOrder}
-            />
-          </div>
-        </div>
-      </IPhoneMockup>
-    </div>
-  )
-}`,
-    files: ["registry/default/example/checkout-page-demo.tsx"],
   },
   "restaurant-hero": {
     name: "restaurant-hero",

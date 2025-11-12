@@ -1,23 +1,25 @@
+import {
+  STORE_FRONT_API_BASE_URL,
+  CRAVEUP_PUBLIC_API_KEY,
+} from "@/constants";
+
 // CraveUp API Configuration
-export const CRAVEUP_API_BASE = process.env.CRAVEUP_API_BASE_URL || 'http://localhost:8000'
+export const CRAVEUP_API_BASE = STORE_FRONT_API_BASE_URL;
 
 // Lazy API key getter - only throws when actually used
 export const getApiKey = () => {
-  const apiKey = process.env.CRAVEUP_API_KEY || process.env.NEXT_PUBLIC_CRAVEUP_API_KEY
+  const apiKey = CRAVEUP_PUBLIC_API_KEY;
   if (!apiKey) {
     // Only warn on server side when actually making API calls
-    if (typeof window === 'undefined') {
-      console.warn('CRAVEUP_API_KEY not found. API features will not work.')
+    if (typeof window === "undefined") {
+      console.warn(
+        "NEXT_PUBLIC_CRAVEUP_API_KEY not found. API features will not work.",
+      );
     }
-    return ''
+    return "";
   }
-  return apiKey
-}
-
-// Server-side only API key getter - no client-side warnings
-export const getServerApiKey = () => {
-  return process.env.CRAVEUP_API_KEY || ''
-}
+  return apiKey;
+};
 
 // For backward compatibility - use getApiKey() function instead
 export const API_KEY = ''

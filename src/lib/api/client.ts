@@ -189,19 +189,6 @@ export const setRoomService = async (
   return handleAPIResponse(response)
 }
 
-export const updateOrderTime = async (
-  locationId: string,
-  cartId: string,
-  orderTime: string
-): Promise<Cart> => {
-  const response = await fetch(endpoints.cartOrderTime(locationId, cartId), {
-    method: 'PUT',
-    headers: apiHeaders(),
-    body: JSON.stringify({ orderTime })
-  })
-  return handleAPIResponse(response)
-}
-
 export const validateAndUpdateCart = async (
   locationId: string,
   cartId: string,

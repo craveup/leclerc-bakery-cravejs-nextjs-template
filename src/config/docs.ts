@@ -128,7 +128,7 @@ export const docsConfig: DocsConfig = {
       ],
     },
     {
-      title: "Cart & Checkout Components",
+      title: "Cart Components",
       items: [
         {
           title: "Cart Overview",
@@ -143,21 +143,6 @@ export const docsConfig: DocsConfig = {
         {
           title: "Cart Sidebar",
           href: "/docs/components/cart/cart-sidebar",
-          items: [],
-        },
-        {
-          title: "Checkout Overview",
-          href: "/docs/components/checkout",
-          items: [],
-        },
-        {
-          title: "Checkout Page",
-          href: "/docs/components/checkout/checkout-page",
-          items: [],
-        },
-        {
-          title: "Checkout Form",
-          href: "/docs/components/checkout/checkout-form",
           items: [],
         },
         {
@@ -191,28 +176,8 @@ export const docsConfig: DocsConfig = {
           items: [],
         },
         {
-          title: "Time Slot Picker",
-          href: "/docs/components/checkout/time-slot-picker",
-          items: [],
-        },
-        {
           title: "Address Picker",
           href: "/docs/components/location/address-picker",
-          items: [],
-        },
-        {
-          title: "Order Type Toggle",
-          href: "/docs/components/checkout/order-type-toggle",
-          items: [],
-        },
-        {
-          title: "Payment Method Selector",
-          href: "/docs/components/checkout/payment-method-selector",
-          items: [],
-        },
-        {
-          title: "Promo Code Input",
-          href: "/docs/components/checkout/promo-code-input",
           items: [],
         },
       ],
