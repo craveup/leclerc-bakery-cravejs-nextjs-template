@@ -315,6 +315,7 @@ export function LeclercCatering() {
 
                   <Button
                     className="w-full text-white dark:text-white"
+                    disabled
                     style={{
                       backgroundColor: "hsl(var(--brand-accent))",
                     }}
