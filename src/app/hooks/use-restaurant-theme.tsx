@@ -71,6 +71,8 @@ export function RestaurantThemeProvider({
       setIsDarkMode(isDark);
       if (themeEngine) {
         themeEngine.setDarkMode(isDark);
+      } else if (typeof window !== "undefined") {
+        document.documentElement.classList.toggle("dark", isDark);
       }
 
       // Persist preference

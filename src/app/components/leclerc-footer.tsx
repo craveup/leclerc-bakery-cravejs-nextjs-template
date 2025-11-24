@@ -35,7 +35,7 @@ export function LeclercFooter() {
             <ul className="space-y-2 text-sm">
               <li>
                 <Link
-                  href="/examples/leclerc-bakery#about"
+                  href="/#about"
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Our Story
@@ -43,7 +43,7 @@ export function LeclercFooter() {
               </li>
               <li>
                 <Link
-                  href="/examples/leclerc-bakery/locations"
+                  href="/locations"
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Locations
@@ -51,7 +51,7 @@ export function LeclercFooter() {
               </li>
               <li>
                 <Link
-                  href="/examples/leclerc-bakery#catering"
+                  href="/#catering"
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Catering
@@ -82,7 +82,7 @@ export function LeclercFooter() {
             <ul className="space-y-2 text-sm">
               <li>
                 <Link
-                  href="/examples/leclerc-bakery/locations"
+                  href="/locations"
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Upper West Side
@@ -90,7 +90,7 @@ export function LeclercFooter() {
               </li>
               <li>
                 <Link
-                  href="/examples/leclerc-bakery/locations"
+                  href="/locations"
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                   SoHo
@@ -98,7 +98,7 @@ export function LeclercFooter() {
               </li>
               <li>
                 <Link
-                  href="/examples/leclerc-bakery/locations"
+                  href="/locations"
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Williamsburg
@@ -106,7 +106,7 @@ export function LeclercFooter() {
               </li>
               <li>
                 <Link
-                  href="/examples/leclerc-bakery/locations"
+                  href="/locations"
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                   View All Locations →
