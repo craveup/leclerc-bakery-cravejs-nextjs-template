@@ -25,8 +25,8 @@ Leclerc Bakery is a production-ready Crave.js storefront built with Next.js 15, 
 | ---------------------------------------------- | -------------------------------------------------------- |
 | ![Menu Grid](public/screenshots/menu-grid.png) | ![Product Dialog](public/screenshots/product-dialog.png) |
 
-| Cart Sidebar                                         | Mobile Drawer |
-| ---------------------------------------------------- | ------------- |
+| Cart Sidebar                                         |
+| ---------------------------------------------------- |
 | ![Cart Sidebar](public/screenshots/cart-sidebar.png) |
 
 ---
