@@ -13,10 +13,16 @@ declare global {
       maps?: {
         places?: {
           AutocompleteService: new () => {
-            getPlacePredictions: (request: any, callback: (predictions: any, status: any) => void) => void;
+            getPlacePredictions: (
+              request: any,
+              callback: (predictions: any, status: any) => void,
+            ) => void;
           };
           PlacesService: new (map: any) => {
-            getDetails: (request: any, callback: (result: any, status: any) => void) => void;
+            getDetails: (
+              request: any,
+              callback: (result: any, status: any) => void,
+            ) => void;
           };
           PlacesServiceStatus: {
             OK: string;
@@ -26,6 +32,7 @@ declare global {
         };
       };
     };
+    __googleMapsLoadPromise?: Promise<void>;
   }
 }
 
@@ -101,26 +108,39 @@ export function AddressAutocomplete({
   const inputRef = React.useRef<HTMLInputElement>(null);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
 
-  // Load Google Maps API
+  // Load Google Maps API once per page
   React.useEffect(() => {
     if (!googleMapsApiKey || isGoogleMapsLoaded) return;
 
-    const loadGoogleMaps = () => {
-      if (window.google && window.google.maps) {
-        setIsGoogleMapsLoaded(true);
-        return;
-      }
+    if (window.google?.maps?.places) {
+      setIsGoogleMapsLoaded(true);
+      return;
+    }
 
-      const script = document.createElement("script");
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${googleMapsApiKey}&libraries=places`;
-      script.async = true;
-      script.defer = true;
-      script.onload = () => setIsGoogleMapsLoaded(true);
-      script.onerror = () => onError?.("Failed to load Google Maps");
-      document.head.appendChild(script);
-    };
+    const loadPromise =
+      window.__googleMapsLoadPromise ||
+      (() => {
+        const promise = new Promise<void>((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = `https://maps.googleapis.com/maps/api/js?key=${googleMapsApiKey}&libraries=places`;
+          script.async = true;
+          script.defer = true;
+          script.dataset.googleMaps = "true";
+          script.onload = () => resolve();
+          script.onerror = () => reject(new Error("Failed to load Google Maps"));
+          document.head.appendChild(script);
+        });
+        window.__googleMapsLoadPromise = promise;
+        return promise;
+      })();
 
-    loadGoogleMaps();
+    loadPromise
+      .then(() => {
+        if (window.google?.maps) {
+          setIsGoogleMapsLoaded(true);
+        }
+      })
+      .catch(() => onError?.("Failed to load Google Maps"));
   }, [googleMapsApiKey, isGoogleMapsLoaded, onError]);
 
   // Initialize Google Maps services

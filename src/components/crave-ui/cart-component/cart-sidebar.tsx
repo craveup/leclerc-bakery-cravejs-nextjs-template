@@ -376,7 +376,7 @@ function CartSidebarContent({
     <div className="w-full space-y-4 p-2 sm:p-4 md:p-4">
       <Button
         onClick={handleCheckoutClick}
-        className="w-full h-14 text-base bg-[#EFE7D2] rounded-2xl disabled:opacity-60"
+        className="w-full h-14 text-base rounded-2xl disabled:opacity-60 bg-[hsl(var(--brand-accent))] text-white hover:opacity-90 dark:text-white"
         size="lg"
         data-testid="CheckoutButton"
         disabled={!apiItems.length}

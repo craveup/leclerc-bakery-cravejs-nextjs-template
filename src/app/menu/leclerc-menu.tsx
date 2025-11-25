@@ -102,10 +102,10 @@ export default function LeclercMenuPage() {
 
   const menus: BundleMenu[] = useMemo(
     () => (data?.menus ?? []) as BundleMenu[],
-    [data],
+    [data]
   );
-  const [selectedMenuId, setSelectedMenuId] = useState<string>(() =>
-    menus[0]?.id ?? "",
+  const [selectedMenuId, setSelectedMenuId] = useState<string>(
+    () => menus[0]?.id ?? ""
   );
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
 
@@ -150,7 +150,7 @@ export default function LeclercMenuPage() {
     const category = categories.find((cat) => cat.id === selectedCategoryId);
     if (!category) return [];
     return (category.products ?? []).map((product) =>
-      normalizeProduct(product, category.name),
+      normalizeProduct(product, category.name)
     );
   }, [categories, selectedCategoryId]);
 
@@ -179,7 +179,7 @@ export default function LeclercMenuPage() {
       const categoryName =
         productCategoryMap.get(product.id) ??
         categories.find((category) =>
-          category.products?.some((p) => p.id === product.id),
+          category.products?.some((p) => p.id === product.id)
         )?.name ??
         "Featured";
       const normalized = normalizeProduct(product, categoryName);
@@ -282,7 +282,7 @@ export default function LeclercMenuPage() {
                 selectedCategory={selectedCategoryId}
                 onCategoryChange={setSelectedCategoryId}
                 sticky
-                stickyTop="top-20"
+                stickyTop="top-24"
                 className="mb-5"
               />
 
@@ -290,7 +290,6 @@ export default function LeclercMenuPage() {
                 {currentItems.map((item) => (
                   <MenuItemCard
                     key={item.id}
-                    variant="detailed"
                     name={item.name}
                     description={item.description}
                     price={item.price}
@@ -298,7 +297,6 @@ export default function LeclercMenuPage() {
                     calories={item.calories}
                     isPopular={item.isPopular}
                     isNew={item.isNew}
-                    dietary={[]}
                     isAvailable
                     showNutrition
                     onAddToCart={() =>

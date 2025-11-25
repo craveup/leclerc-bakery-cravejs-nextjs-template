@@ -71,7 +71,10 @@ export function LeclercMenu({ isHomePage = false }: LeclercMenuProps) {
 
   useEffect(() => {
     if (!categories.length) return;
-    if (!selectedCategoryId || !categories.some((c) => c.id === selectedCategoryId)) {
+    if (
+      !selectedCategoryId ||
+      !categories.some((c) => c.id === selectedCategoryId)
+    ) {
       setSelectedCategoryId(categories[0].id);
     }
   }, [categories, selectedCategoryId]);
@@ -80,7 +83,7 @@ export function LeclercMenu({ isHomePage = false }: LeclercMenuProps) {
     const category = categories.find((entry) => entry.id === categoryId);
     if (!category) return [];
     return (category.products ?? []).map((product) =>
-      mapProduct(product, category.name),
+      mapProduct(product, category.name)
     );
   };
 
@@ -110,8 +113,8 @@ export function LeclercMenu({ isHomePage = false }: LeclercMenuProps) {
         ) : hasError ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">
-              We couldn&rsquo;t load the live menu right now. Please try again in
-              a moment.
+              We couldn&rsquo;t load the live menu right now. Please try again
+              in a moment.
             </p>
           </div>
         ) : categories.length === 0 ? (
@@ -149,7 +152,6 @@ export function LeclercMenu({ isHomePage = false }: LeclercMenuProps) {
                     ).map((item) => (
                       <MenuItemCard
                         key={item.id}
-                        variant="detailed"
                         name={item.name}
                         description={item.description}
                         price={item.price}
