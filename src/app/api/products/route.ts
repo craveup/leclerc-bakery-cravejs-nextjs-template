@@ -1,4 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import {
+  STORE_FRONT_API_BASE_URL,
+  CRAVEUP_PUBLIC_API_KEY,
+} from "@/constants";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -11,13 +15,11 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const apiKey =
-    process.env.CRAVEUP_API_KEY || process.env.NEXT_PUBLIC_CRAVEUP_API_KEY;
-  const apiBaseUrl =
-    process.env.CRAVEUP_API_BASE_URL || "http://localhost:8000";
+  const apiKey = CRAVEUP_PUBLIC_API_KEY;
+  const apiBaseUrl = STORE_FRONT_API_BASE_URL;
 
   if (!apiKey) {
-    console.warn("CRAVEUP_API_KEY not found. API features will not work.");
+    console.warn("NEXT_PUBLIC_CRAVEUP_API_KEY not found. API features will not work.");
     return NextResponse.json(
       { error: "API key not configured" },
       { status: 500 },

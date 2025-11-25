@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ClientIcon } from "./client-icon";
@@ -25,12 +26,12 @@ export function LeclercAbout() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           {/* Story Content */}
-          <div className="space-y-6">
+          <div className="space-y-6 text-center sm:text-left">
             <div>
               <h3 className="font-leclerc-primary text-2xl font-medium mb-4 text-foreground tracking-tight">
                 A Family Tradition
               </h3>
-              <p className="font-leclerc-support text-muted-foreground leading-relaxed">
+              <p className="font-leclerc-support text-muted-foreground leading-relaxed max-w-xl mx-auto sm:mx-0">
                 Founded by Marie and Pierre Leclerc in 2012, our bakery started
                 with a simple dream: to bring the authentic taste of French
                 pastries to New York City. Using recipes passed down through
@@ -43,7 +44,7 @@ export function LeclercAbout() {
               <h3 className="font-leclerc-primary text-2xl font-medium mb-4 text-foreground tracking-tight">
                 Artisanal Excellence
               </h3>
-              <p className="font-leclerc-support text-muted-foreground leading-relaxed">
+              <p className="font-leclerc-support text-muted-foreground leading-relaxed max-w-xl mx-auto sm:mx-0">
                 Every croissant is hand-rolled, every cookie is carefully
                 shaped, and every pastry is baked fresh daily. We believe in the
                 art of slow baking, allowing our dough to develop complex
@@ -52,7 +53,7 @@ export function LeclercAbout() {
             </div>
 
             {/* Values */}
-            <div className="grid grid-cols-2 gap-4 pt-4">
+            <div className="grid grid-cols-2 gap-4 pt-4 max-w-xs mx-auto sm:max-w-none">
               <div className="text-center">
                 <div
                   className="text-2xl font-bold mb-1"
@@ -78,11 +79,14 @@ export function LeclercAbout() {
 
           {/* Image and Features */}
           <div className="space-y-6">
-            <div className="relative">
-              <img
+            <div className="relative h-80 w-full">
+              <Image
                 src="/images/leclerc-bakery/our-story.webp"
                 alt="Marie and Pierre Leclerc in their bakery"
-                className="w-full h-80 object-cover rounded-lg shadow-lg"
+                fill
+                className="object-cover rounded-lg shadow-lg"
+                sizes="(min-width: 1024px) 50vw, 100vw"
+                priority
               />
               <Badge className="absolute bottom-4 left-4 bg-background text-foreground">
                 Est. 2012

@@ -8,6 +8,7 @@ import { useAddress } from "../providers/address-provider";
 import { useThemeClasses } from "../hooks/use-restaurant-theme";
 import { AddressFlow, DeliveryOption } from "./address-flow";
 import { ClientIcon } from "./client-icon";
+import { ThemeToggle } from "./theme-toggle";
 import Link from "next/link";
 
 interface LeclercHeaderProps {
@@ -104,7 +105,7 @@ export function LeclercHeader({ onCartClick }: LeclercHeaderProps) {
             role="toolbar"
             aria-label="User actions"
           >
-            <Button
+            {/* <Button
               variant="ghost"
               size="icon"
               className="hidden md:flex"
@@ -115,7 +116,8 @@ export function LeclercHeader({ onCartClick }: LeclercHeaderProps) {
                 className="h-5 w-5"
                 aria-hidden="true"
               />
-            </Button>
+            </Button> */}
+            <ThemeToggle />
 
             <Button variant="ghost" size="icon" aria-label="User account menu">
               <ClientIcon name="User" className="h-5 w-5" aria-hidden="true" />

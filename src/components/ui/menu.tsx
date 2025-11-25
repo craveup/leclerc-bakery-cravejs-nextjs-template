@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 export interface MenuItem {
@@ -90,10 +91,13 @@ export function Menu({
                   layout === "list" && "h-24 w-24 flex-shrink-0"
                 )}
               >
-                <img
+                <Image
                   src={item.image}
                   alt={item.name}
+                  fill
                   className="object-cover transition-all group-hover:scale-105"
+                  sizes={layout === "list" ? "96px" : "(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"}
+                  unoptimized
                 />
                 {item.popular && (
                   <div className="absolute left-2 top-2 rounded-full bg-primary px-2 py-1 text-xs text-primary-foreground">

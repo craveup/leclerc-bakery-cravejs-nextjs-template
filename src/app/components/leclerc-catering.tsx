@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 
 import { ClientIcon } from "./client-icon";
@@ -265,10 +266,13 @@ export function LeclercCatering() {
                 )}
 
                 <div className="relative h-48 overflow-hidden">
-                  <img
+                  <Image
                     src={pkg.image}
                     alt={pkg.name}
-                    className="w-full h-full object-cover"
+                    fill
+                    className="object-cover"
+                    sizes="(min-width: 768px) 33vw, 100vw"
+                    priority={pkg.id === "breakfast"}
                   />
                 </div>
 
@@ -315,6 +319,7 @@ export function LeclercCatering() {
 
                   <Button
                     className="w-full text-white dark:text-white"
+                    disabled
                     style={{
                       backgroundColor: "hsl(var(--brand-accent))",
                     }}

@@ -6,7 +6,7 @@ import {
   DialogPortal,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Drawer, DrawerContent } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { ProductDescriptionProps } from "@/types/common";
 import { ProductDescriptionScreen } from "./ProductDescriptionScreen";
@@ -34,6 +34,9 @@ function ProductDescriptionDialog(props: ProductDescriptionProps) {
       onOpenChange={() => props.onClose()}
     >
       <DrawerContent className="z-[1051] h-[90vh] overflow-hidden border-none p-0">
+        <VisuallyHidden>
+          <DrawerTitle>Product details</DrawerTitle>
+        </VisuallyHidden>
         {props.productId && <ProductDescriptionScreen {...props} />}
       </DrawerContent>
     </Drawer>

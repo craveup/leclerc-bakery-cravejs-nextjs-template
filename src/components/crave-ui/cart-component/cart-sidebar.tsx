@@ -21,10 +21,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  CHECKOUT_BASE_URL,
-  location_Id as DEFAULT_LOCATION_ID,
-} from "@/constants";
+import { location_Id as DEFAULT_LOCATION_ID } from "@/constants";
 import { ResponsiveSheet } from "@/components/ResponsiveSheet";
 import type { StorefrontCart, CartModifierGroup } from "@/types/cart-types";
 
@@ -57,12 +54,7 @@ const getReturnUrl = () => {
   if (typeof window !== "undefined" && window.location?.origin) {
     return window.location.origin;
   }
-  return process.env.NEXT_PUBLIC_SITE_URL ?? null;
-};
-
-const sanitizeBaseUrl = (value: string | null | undefined) => {
-  if (!value) return null;
-  return value.replace(/\/+$/, "");
+  return null;
 };
 
 function formatSelections(
@@ -175,29 +167,6 @@ function CartSidebarContent({
   const locationId = resolvedLocationId ?? DEFAULT_LOCATION_ID;
   const storefrontLocationId = cart?.locationId ?? locationId ?? null;
 
-  const hostedCheckoutUrl = useMemo(() => {
-    if (!storefrontLocationId || !cartId) return null;
-    const base = sanitizeBaseUrl(CHECKOUT_BASE_URL);
-    if (!base) return null;
-
-    try {
-      const url = new URL(`${base}/${storefrontLocationId}/checkout`);
-      url.searchParams.set("cartId", cartId);
-      const returnTarget = getReturnUrl();
-      if (returnTarget) {
-        url.searchParams.set("returnUrl", returnTarget);
-      }
-      return url.toString();
-    } catch {
-      return null;
-    }
-  }, [cartId, storefrontLocationId]);
-
-  const internalCheckoutUrl = useMemo(() => {
-    if (!storefrontLocationId || !cartId) return null;
-    return `/locations/${storefrontLocationId}/carts/${cartId}/checkout`;
-  }, [storefrontLocationId, cartId]);
-
   const normalizeCheckoutUrl = useCallback(
     (candidate?: string | null) => {
       if (!candidate) return null;
@@ -228,17 +197,8 @@ function CartSidebarContent({
   );
 
   const checkoutUrl = useMemo(() => {
-    return (
-      normalizeCheckoutUrl(hostedCheckoutUrl) ??
-      normalizeCheckoutUrl(cart?.checkoutUrl?.trim()) ??
-      normalizeCheckoutUrl(internalCheckoutUrl)
-    );
-  }, [
-    normalizeCheckoutUrl,
-    hostedCheckoutUrl,
-    cart?.checkoutUrl,
-    internalCheckoutUrl,
-  ]);
+    return normalizeCheckoutUrl(cart?.checkoutUrl?.trim());
+  }, [normalizeCheckoutUrl, cart?.checkoutUrl]);
 
   const [busyLineId, setBusyLineId] = useState<string | null>(null);
   const [productIdToOpen, setProductIdToOpen] = useState<string>("");
@@ -416,7 +376,7 @@ function CartSidebarContent({
     <div className="w-full space-y-4 p-2 sm:p-4 md:p-4">
       <Button
         onClick={handleCheckoutClick}
-        className="w-full h-14 text-base bg-[#EFE7D2] rounded-2xl disabled:opacity-60"
+        className="w-full h-14 text-base rounded-2xl disabled:opacity-60 bg-[hsl(var(--brand-accent))] text-white hover:opacity-90 dark:text-white"
         size="lg"
         data-testid="CheckoutButton"
         disabled={!apiItems.length}

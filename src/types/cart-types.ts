@@ -13,6 +13,7 @@ import type {
 export type StorefrontCart = BaseStorefrontCart & {
   checkoutUrl?: string | null;
   cartUrl?: string | null;
+  orderTotal?: string;
 };
 
 export type {

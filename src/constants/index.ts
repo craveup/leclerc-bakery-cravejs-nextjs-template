@@ -1,20 +1,17 @@
-const fallbackApiBase =
-  process.env.NEXT_PUBLIC_API_URL ??
-  process.env.NEXT_PUBLIC_CRAVEUP_STOREFRONT_BASE_URL ??
-  "";
+const resolveStorefrontBaseUrl = () => {
+  const envOverride = process.env.NEXT_PUBLIC_CRAVEUP_API_BASE_URL?.trim();
+  if (envOverride) return envOverride;
+  return process.env.NODE_ENV === "development"
+    ? "http://localhost:8000"
+    : "https://api.craveup.com";
+};
 
-export const STORE_FRONT_API_BASE_URL = fallbackApiBase;
-export const ADMIN_API_BASE_URL = fallbackApiBase;
+export const STORE_FRONT_API_BASE_URL = resolveStorefrontBaseUrl();
 export const GOOGLE_MAP_API_KEY =
-  process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string;
-export const NEXT_PUBLIC_STOREFRONT_URL =
-  process.env.NEXT_PUBLIC_STOREFRONT_URL ?? "";
-export const CHECKOUT_BASE_URL =
-  process.env.NEXT_PUBLIC_CHECKOUT_BASE_URL?.replace(/\/$/, "") ||
-  NEXT_PUBLIC_STOREFRONT_URL?.replace(/\/$/, "") ||
-  "";
-
-export const location_Id = process.env.NEXT_PUBLIC_LOCATION_ID as string;
+  process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
+export const CRAVEUP_PUBLIC_API_KEY =
+  process.env.NEXT_PUBLIC_CRAVEUP_API_KEY ?? "";
+export const location_Id = process.env.NEXT_PUBLIC_LOCATION_ID ?? "";
 export const DEFAULT_FULFILLMENT_METHOD = "takeout";
 
 export const imagePlaceholder =

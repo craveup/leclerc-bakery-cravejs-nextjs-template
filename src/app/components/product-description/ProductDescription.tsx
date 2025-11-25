@@ -9,6 +9,10 @@ import {
   ProductDescription as ProductDescriptionType,
   SelectedModifierTypes,
 } from "@/types/menu-types";
+import {
+  deriveCalories,
+  stripCaloriesFromDescription,
+} from "@/lib/menu-normalizers";
 import ModifierGroup from "./ModifierGroup";
 import ItemUnavailableAction from "./ItemUnavailableAction";
 import SpecialInstructions from "./SpecialInstructions";
@@ -40,6 +44,14 @@ const ProductDescription = ({
   const { images, name, description } = product;
   const imageURL = images[0];
   const modifiers = useMemo(() => product?.modifiers ?? [], [product]);
+  const cleanedDescription = useMemo(
+    () => stripCaloriesFromDescription(description || ""),
+    [description],
+  );
+  const calories = useMemo(
+    () => deriveCalories(name, description || ""),
+    [name, description],
+  );
   const handleModifierGroupInteract = (groupId?: string) => {
     if (!errorModifierGroupId) return;
     if (!groupId || groupId === errorModifierGroupId) {
@@ -79,11 +91,16 @@ const ProductDescription = ({
         </div>
         <div className={`px-4 ${imageURL ? "py-4" : "pt-8"} mb-3`}>
           <p className="text-3xl font-semibold mb-2">{name}</p>
-          {description && (
+          {cleanedDescription && (
             <ShowMoreText
-              text={description as string}
+              text={cleanedDescription}
               className="text-base sm:text-sm text-gray-700 dark:text-gray-300"
             />
+          )}
+          {calories && (
+            <p className="text-sm font-medium text-muted-foreground mt-2">
+              Calories: {calories} cal
+            </p>
           )}
         </div>
         <Separator />
