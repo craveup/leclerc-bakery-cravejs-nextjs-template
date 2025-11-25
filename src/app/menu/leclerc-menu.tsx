@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { LeclercHeader } from "../components/leclerc-header";
 import { LeclercCart } from "../components/leclerc-cart";
@@ -207,20 +208,26 @@ export default function LeclercMenuPage() {
 
       <main>
         <div className="relative w-full h-[300px] overflow-hidden">
-          <img
+          <Image
             src="https://images.unsplash.com/photo-1453831210728-695502f9f795?w=1600&h=600&fit=crop"
             alt="Leclerc Bakery Menu"
-            className="w-full h-full object-cover"
+            fill
+            className="object-cover"
+            priority
+            sizes="100vw"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
 
           <div className="absolute bottom-0 left-0 right-0 p-6">
             <div className="max-w-7xl mx-auto flex items-center gap-4">
               <div className="w-16 h-16 sm:w-20 sm:h-20 relative rounded-full overflow-hidden border-4 border-white shadow-lg">
-                <img
+                <Image
                   src="https://images.unsplash.com/photo-1540914124281-342587941389?w=200&h=200&fit=crop"
                   alt="Leclerc Bakery Logo"
-                  className="w-full h-full object-cover"
+                  fill
+                  className="object-cover"
+                  sizes="80px"
+                  priority
                 />
               </div>
               <div className="text-white">

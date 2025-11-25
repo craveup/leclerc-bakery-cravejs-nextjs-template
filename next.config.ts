@@ -23,6 +23,11 @@ const nextConfig: NextConfig = {
         hostname: "kzmps94w6wprloamplrj.lite.vusercontent.net",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+        pathname: "/**",
+      },
     ],
     formats: ["image/webp", "image/avif"],
   },

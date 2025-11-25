@@ -1,4 +1,5 @@
 import * as React from "react";
+import Image from "next/image";
 import { Plus, Clock, Star, AlertTriangle, Loader2 } from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader } from "./card";
 import { Button } from "./button";
@@ -82,10 +83,13 @@ export function MenuItemCard({
     >
       <div className="relative h-56 md:h-64 overflow-hidden bg-muted">
         {image ? (
-          <img
+          <Image
             src={image}
             alt={name}
-            className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
+            fill
+            className="object-cover transition-transform duration-200 group-hover:scale-105"
+            sizes="(min-width: 768px) 384px, 100vw"
+            unoptimized
           />
         ) : (
           <div className="h-full w-full bg-muted flex items-center justify-center">

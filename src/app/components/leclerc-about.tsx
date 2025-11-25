@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ClientIcon } from "./client-icon";
@@ -78,11 +79,14 @@ export function LeclercAbout() {
 
           {/* Image and Features */}
           <div className="space-y-6">
-            <div className="relative">
-              <img
+            <div className="relative h-80 w-full">
+              <Image
                 src="/images/leclerc-bakery/our-story.webp"
                 alt="Marie and Pierre Leclerc in their bakery"
-                className="w-full h-80 object-cover rounded-lg shadow-lg"
+                fill
+                className="object-cover rounded-lg shadow-lg"
+                sizes="(min-width: 1024px) 50vw, 100vw"
+                priority
               />
               <Badge className="absolute bottom-4 left-4 bg-background text-foreground">
                 Est. 2012
