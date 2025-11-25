@@ -7,6 +7,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { ProductDescriptionProps } from "@/types/common";
 import { ProductDescriptionScreen } from "./ProductDescriptionScreen";
