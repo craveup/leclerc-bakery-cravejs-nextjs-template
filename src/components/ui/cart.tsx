@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { MinusIcon, PlusIcon, ShoppingCartIcon, TrashIcon } from "lucide-react";
 import type { CartItem } from "@/types/restaurant";
@@ -86,11 +87,14 @@ export function Cart({
                 <div className="flex items-start justify-between">
                   <div className="flex gap-3">
                     {item.image && (
-                      <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-md bg-muted">
-                        <img
+                      <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-md bg-muted relative">
+                        <Image
                           src={item.image}
-                          alt={item.name}
-                          className="h-full w-full object-cover"
+                          alt={item.name || "Cart item"}
+                          fill
+                          className="object-cover"
+                          sizes="40px"
+                          unoptimized
                         />
                       </div>
                     )}

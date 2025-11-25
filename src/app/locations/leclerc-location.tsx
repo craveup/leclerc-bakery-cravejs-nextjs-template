@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -167,10 +168,13 @@ export default function LeclercLocationsPage() {
             >
               {/* Location Image */}
               <div className="relative h-48 overflow-hidden">
-                <img
+                <Image
                   src={location.image}
                   alt={location.name}
-                  className="w-full h-full object-cover"
+                  fill
+                  className="object-cover"
+                  sizes="(min-width: 1280px) 33vw, (min-width: 1024px) 50vw, 100vw"
+                  unoptimized
                 />
                 {location.isMainLocation && (
                   <Badge className="absolute top-3 left-3 bg-primary text-primary-foreground">

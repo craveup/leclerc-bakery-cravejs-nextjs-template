@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { LeclercHeader } from "../components/leclerc-header";
 import { LeclercCart } from "../components/leclerc-cart";
@@ -102,10 +103,10 @@ export default function LeclercMenuPage() {
 
   const menus: BundleMenu[] = useMemo(
     () => (data?.menus ?? []) as BundleMenu[],
-    [data],
+    [data]
   );
-  const [selectedMenuId, setSelectedMenuId] = useState<string>(() =>
-    menus[0]?.id ?? "",
+  const [selectedMenuId, setSelectedMenuId] = useState<string>(
+    () => menus[0]?.id ?? ""
   );
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
 
@@ -150,7 +151,7 @@ export default function LeclercMenuPage() {
     const category = categories.find((cat) => cat.id === selectedCategoryId);
     if (!category) return [];
     return (category.products ?? []).map((product) =>
-      normalizeProduct(product, category.name),
+      normalizeProduct(product, category.name)
     );
   }, [categories, selectedCategoryId]);
 
@@ -179,7 +180,7 @@ export default function LeclercMenuPage() {
       const categoryName =
         productCategoryMap.get(product.id) ??
         categories.find((category) =>
-          category.products?.some((p) => p.id === product.id),
+          category.products?.some((p) => p.id === product.id)
         )?.name ??
         "Featured";
       const normalized = normalizeProduct(product, categoryName);
@@ -207,20 +208,26 @@ export default function LeclercMenuPage() {
 
       <main>
         <div className="relative w-full h-[300px] overflow-hidden">
-          <img
+          <Image
             src="https://images.unsplash.com/photo-1453831210728-695502f9f795?w=1600&h=600&fit=crop"
             alt="Leclerc Bakery Menu"
-            className="w-full h-full object-cover"
+            fill
+            className="object-cover"
+            priority
+            sizes="100vw"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
 
           <div className="absolute bottom-0 left-0 right-0 p-6">
             <div className="max-w-7xl mx-auto flex items-center gap-4">
               <div className="w-16 h-16 sm:w-20 sm:h-20 relative rounded-full overflow-hidden border-4 border-white shadow-lg">
-                <img
+                <Image
                   src="https://images.unsplash.com/photo-1540914124281-342587941389?w=200&h=200&fit=crop"
                   alt="Leclerc Bakery Logo"
-                  className="w-full h-full object-cover"
+                  fill
+                  className="object-cover"
+                  sizes="80px"
+                  priority
                 />
               </div>
               <div className="text-white">
@@ -282,7 +289,7 @@ export default function LeclercMenuPage() {
                 selectedCategory={selectedCategoryId}
                 onCategoryChange={setSelectedCategoryId}
                 sticky
-                stickyTop="top-20"
+                stickyTop="top-24"
                 className="mb-5"
               />
 
@@ -290,7 +297,6 @@ export default function LeclercMenuPage() {
                 {currentItems.map((item) => (
                   <MenuItemCard
                     key={item.id}
-                    variant="detailed"
                     name={item.name}
                     description={item.description}
                     price={item.price}
@@ -298,7 +304,6 @@ export default function LeclercMenuPage() {
                     calories={item.calories}
                     isPopular={item.isPopular}
                     isNew={item.isNew}
-                    dietary={[]}
                     isAvailable
                     showNutrition
                     onAddToCart={() =>

@@ -94,13 +94,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clearError = useCallback(() => setError(null), []);
 
-  const ensureCartReady = () => {
+  const ensureCartReady = useCallback(() => {
     if (!locationId || !cartId) {
       setError("Cart is not ready. Please try again.");
       return false;
     }
     return true;
-  };
+  }, [cartId, locationId]);
 
   const addToCart = useCallback(
     async (item: MenuItem & { options: ItemOptions }) => {

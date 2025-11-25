@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { getLocation, createCart } from "@/lib/api/cart";
+import { STORE_FRONT_API_BASE_URL } from "@/constants";
 
 export default function TestAPIPage() {
   const [result, setResult] = useState<any>(null);
@@ -52,12 +53,13 @@ export default function TestAPIPage() {
             <strong>Location ID:</strong> {locationId}
           </div>
           <div>
-            <strong>API Base URL:</strong>{" "}
-            {process.env.NEXT_PUBLIC_STORE_FRONT_API_URL}
+            <strong>API Base URL:</strong> {STORE_FRONT_API_BASE_URL}
           </div>
           <div>
             <strong>API Key:</strong>{" "}
-            {process.env.NEXT_PUBLIC_API_KEY ? "✓ Configured" : "✗ Missing"}
+            {process.env.NEXT_PUBLIC_CRAVEUP_API_KEY
+              ? "Configured"
+              : "Missing"}
           </div>
         </div>
 

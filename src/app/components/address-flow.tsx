@@ -44,16 +44,17 @@ export interface AddressFlowProps {
 }
 
 const deliveryOptions: DeliveryOption[] = [
-  {
-    id: "delivery",
-    type: "delivery",
-    title: "Delivery",
-    description: "Get it delivered to your door",
-    icon: <Truck className="h-5 w-5" />,
-    estimatedTime: "25-35 min",
-    fee: 2.99,
-    isAvailable: true,
-  },
+  // Delivery temporarily disabled
+  // {
+  //   id: "delivery",
+  //   type: "delivery",
+  //   title: "Delivery",
+  //   description: "Get it delivered to your door",
+  //   icon: <Truck className="h-5 w-5" />,
+  //   estimatedTime: "25-35 min",
+  //   fee: 2.99,
+  //   isAvailable: true,
+  // },
   {
     id: "pickup",
     type: "pickup",
@@ -64,23 +65,23 @@ const deliveryOptions: DeliveryOption[] = [
     fee: 0,
     isAvailable: true,
   },
-  {
-    id: "dine-in",
-    type: "dine-in",
-    title: "Dine In",
-    description: "Enjoy fresh cookies in our café",
-    icon: <MapPin className="h-5 w-5" />,
-    estimatedTime: "Ready now",
-    fee: 0,
-    isAvailable: false, // Currently closed
-  },
+  // {
+  //   id: "dine-in",
+  //   type: "dine-in",
+  //   title: "Dine In",
+  //   description: "Enjoy fresh cookies in our cafAc",
+  //   icon: <MapPin className="h-5 w-5" />,
+  //   estimatedTime: "Ready now",
+  //   fee: 0,
+  //   isAvailable: false, // Currently closed
+  // },
 ];
 
 export function AddressFlow({
   isOpen,
   onClose,
   onComplete,
-  initialOption = "delivery",
+  initialOption = "pickup",
 }: AddressFlowProps) {
   const [step, setStep] = useState<"option" | "address">("option");
   const [selectedOption, setSelectedOption] = useState<string>(initialOption);
@@ -107,7 +108,7 @@ export function AddressFlow({
     if (selectedOption === "delivery") {
       setStep("address");
     } else {
-      // For pickup and dine-in, complete immediately
+      // For pickup, complete immediately
       handleComplete();
     }
   };
@@ -281,9 +282,8 @@ export function AddressFlow({
                   ))}
                 </RadioGroup>
 
-                {/* Location info for pickup/dine-in */}
-                {(selectedOption === "pickup" ||
-                  selectedOption === "dine-in") && (
+                {/* Location info for pickup */}
+                {selectedOption === "pickup" && (
                   <Card className="bg-muted/30">
                     <CardContent className="p-4">
                       <div className="flex items-start gap-3">

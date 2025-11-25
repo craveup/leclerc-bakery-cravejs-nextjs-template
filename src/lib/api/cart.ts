@@ -36,27 +36,6 @@ export const removeCartItem = async (locationId: string, cartId: string, itemId:
   return putData(`/api/v1/locations/${locationId}/carts/${cartId}/items/${itemId}`, { quantity: 0 });
 };
 
-// Update order time
-export const updateOrderTime = async (
-  locationId: string, 
-  cartId: string, 
-  orderTime: string, 
-  orderDate: string
-) => {
-  return putData(`/api/v1/locations/${locationId}/carts/${cartId}/update-order-time`, {
-    orderTime,
-    orderDate
-  });
-};
-
-// Apply promo code
-export const applyPromoCode = async (locationId: string, cartId: string, promoCode: string) => {
-  return postData(`/api/v1/locations/${locationId}/discounts/apply-discount`, { 
-    cartId, 
-    discountCode: promoCode 
-  });
-};
-
 // Update customer information
 export const updateCustomerInfo = async (
   locationId: string, 
