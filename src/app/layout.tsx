@@ -26,6 +26,26 @@ export const metadata: Metadata = {
   title: "Leclerc Bakery - Fresh Artisanal Pastries & Baked Goods",
   description:
     "Artisanal French bakery specializing in fresh pastries, signature cookies, and traditional baked goods. Order online for pickup and delivery.",
+  openGraph: {
+    title: "Leclerc Bakery - Fresh Artisanal Pastries & Baked Goods",
+    description:
+      "Artisanal French bakery specializing in fresh pastries, signature cookies, and traditional baked goods. Order online for pickup and delivery.",
+    images: [
+      {
+        url: "/preview.png",
+        width: 1200,
+        height: 630,
+        alt: "Leclerc Bakery hero background",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Leclerc Bakery - Fresh Artisanal Pastries & Baked Goods",
+    description:
+      "Artisanal French bakery specializing in fresh pastries, signature cookies, and traditional baked goods. Order online for pickup and delivery.",
+    images: ["/preview.png"],
+  },
 };
 
 export default function RootLayout({
