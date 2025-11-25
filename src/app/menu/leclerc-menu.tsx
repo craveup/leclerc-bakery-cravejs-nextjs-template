@@ -19,37 +19,6 @@ import {
   stripCaloriesFromDescription,
 } from "@/lib/menu-normalizers";
 
-const getImagePath = (name: string, category?: string) => {
-  const imageMap: Record<string, string> = {
-    "Classic Chocolate Chip":
-      "/images/leclerc-bakery/signature/choc-chip-walnut.webp",
-    "Double Dark Chocolate":
-      "/images/leclerc-bakery/signature/dark-choc-chip.webp",
-    "Oatmeal Raisin": "/images/leclerc-bakery/signature/oatmeal-raisin.webp",
-    "Peanut Butter Dream": "/images/leclerc-bakery/signature/pb-choc-chip.webp",
-    "Butter Croissant": "/images/leclerc-bakery/menu/butter-croissant.webp",
-    "Pain au Chocolat": "/images/leclerc-bakery/menu/pain-au-chocolat.webp",
-    "Almond Croissant": "/images/leclerc-bakery/menu/almond-croissant.webp",
-    "Fruit Danish": "/images/leclerc-bakery/menu/fruit-danish.webp",
-    Palmier: "/images/leclerc-bakery/menu/palmier.webp",
-    Eclair: "/images/leclerc-bakery/menu/eclair.webp",
-    "Sourdough Loaf": "/images/leclerc-bakery/menu/sourdough-loaf.webp",
-    "French Baguette": "/images/leclerc-bakery/menu/french-baguette.webp",
-    "Whole Wheat Country":
-      "/images/leclerc-bakery/menu/whole-wheat-country.webp",
-    "Olive Rosemary": "/images/leclerc-bakery/menu/olive-rosemary.webp",
-    Brioche: "/images/leclerc-bakery/menu/brioche.webp",
-    Multigrain: "/images/leclerc-bakery/menu/multigrain.webp",
-  };
-
-  if (imageMap[name]) return imageMap[name];
-  if (category && imageMap[`${category}-${name}`]) {
-    return imageMap[`${category}-${name}`];
-  }
-
-  return "/images/leclerc-bakery/signature/choc-chip-walnut.webp";
-};
-
 const toMenuCategory = (categoryName: string): MenuItem["category"] => {
   const normalized = categoryName.toLowerCase();
   if (normalized.includes("pastr")) return "pastries";
@@ -89,7 +58,7 @@ const normalizeProduct = (product: Product, categoryName: string): MenuItem => {
     name: product.name,
     description: stripCaloriesFromDescription(product.description),
     price: numericPrice,
-    image: product.images?.[0] || getImagePath(product.name, categoryName),
+    image: product.images?.[0] ?? null,
     calories: deriveCalories(product.name, product.description),
     isPopular: derivedPopular,
     isNew: derivedNew,
@@ -190,7 +159,7 @@ export default function LeclercMenuPage() {
         id: product.id,
         name: product.name,
         price: `$${priceValue.toFixed(2)}`,
-        imageUrl: product.images?.[0] || getImagePath(product.name),
+        imageUrl: product.images?.[0] ?? "",
         badge:
           tags.find((tag) => tag.toLowerCase().includes("popular")) ||
           undefined,
@@ -209,7 +178,7 @@ export default function LeclercMenuPage() {
       <main>
         <div className="relative w-full h-[300px] overflow-hidden">
           <Image
-            src="https://images.unsplash.com/photo-1453831210728-695502f9f795?w=1600&h=600&fit=crop"
+            src="/images/menu-bg.jpeg"
             alt="Leclerc Bakery Menu"
             fill
             className="object-cover"
@@ -222,7 +191,7 @@ export default function LeclercMenuPage() {
             <div className="max-w-7xl mx-auto flex items-center gap-4">
               <div className="w-16 h-16 sm:w-20 sm:h-20 relative rounded-full overflow-hidden border-4 border-white shadow-lg">
                 <Image
-                  src="https://images.unsplash.com/photo-1540914124281-342587941389?w=200&h=200&fit=crop"
+                  src="/images/logo.jpeg"
                   alt="Leclerc Bakery Logo"
                   fill
                   className="object-cover"
