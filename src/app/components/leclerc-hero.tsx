@@ -22,12 +22,13 @@ export function LeclercHero() {
   };
 
   return (
-    <section className="relative h-[500px] overflow-hidden">
+    <section className="relative h-[680px] overflow-hidden">
       {/* Background Image */}
       <div
         className="absolute inset-0 bg-cover bg-center"
         style={{
-          backgroundImage: `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=1600&h=800&fit=crop')`,
+          backgroundImage:
+            "linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.6)), url('/images/home-page-bg.jpeg')",
         }}
       />
       <div className="absolute inset-0 bg-black/20 dark:bg-black/40" />
