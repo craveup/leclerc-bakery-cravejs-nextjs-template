@@ -17,6 +17,8 @@ Leclerc Bakery is a production-ready Crave.js storefront built with Next.js 15, 
 
 ## Demo
 
+**Live Demo:** [leclerc-bakery.order.page](https://leclerc-bakery.order.page/)
+
 | Hero (Light)                                     | Hero (Dark)                                    |
 | ------------------------------------------------ | ---------------------------------------------- |
 | ![Hero Light](public/screenshots/hero-light.png) | ![Hero Dark](public/screenshots/hero-dark.png) |
@@ -25,9 +27,15 @@ Leclerc Bakery is a production-ready Crave.js storefront built with Next.js 15, 
 | ---------------------------------------------- | -------------------------------------------------------- |
 | ![Menu Grid](public/screenshots/menu-grid.png) | ![Product Dialog](public/screenshots/product-dialog.png) |
 
-| Cart Sidebar                                         | Mobile Drawer                                           |
-| ---------------------------------------------------- | ------------------------------------------------------- |
-| ![Cart Sidebar](public/screenshots/cart-sidebar.png) | ![Mobile Drawer](public/screenshots/product-drawer.png) |
+| Cart Sidebar                                         |
+| ---------------------------------------------------- |
+| ![Cart Sidebar](public/screenshots/cart-sidebar.png) |
+
+---
+
+## Deploy with Vercel
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/craveup/leclerc-bakery-cravejs-nextjs-template&project-name=leclerc-bakery-storefront&repository-name=leclerc-bakery-storefront&env=NEXT_PUBLIC_CRAVEUP_API_KEY,NEXT_PUBLIC_LOCATION_ID,NEXT_PUBLIC_GOOGLE_MAPS_API_KEY)
 
 ---
 
