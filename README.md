@@ -1,16 +1,21 @@
 # Restaurant Storefront Starter
 
-Launch a production-ready restaurant ordering app in minutes.
+> [!WARNING]
+> **Legacy visual reference only.** This repository pins the retired Storefront
+> SDK 1.x browser-key contract. Do not use it as a production starter, expose a
+> Crave API key in browser code, or use its one-click deployment flow. Build new
+> integrations from the current [Storefront SDK guide](https://docs.craveup.com/getting-started/storefront-sdk)
+> and treat this repository only as design and interaction reference material.
 
-- Used in real multi-location deployments
-- Includes menu, cart, checkout, auth
-- Works with Square / Toast (or mock data)
+- Demonstrates a bakery storefront design
+- Includes legacy menu, cart, checkout, and auth UI
+- Can be studied locally with mock data
 
 ---
 
 ## Key Features
 
-- **CraveUp Ordering Stack** – Integrates the CraveUp Storefront SDK for live menus, cart mutations, and checkout handoffs.
+- **Legacy Ordering UI** – Shows the older Storefront SDK 1.x integration shape; it is not the current public contract.
 - **Rich Menu Experience** – Sticky category navigation, featured carousel, and responsive cards with hover states.
 - **Product Dialog & Drawer** – Desktop dialogs and mobile drawers share the same content for parity and accessibility.
 - **Cart & Recommendations** – Persistent sidebar/cart drawer with quantity controls, item notes, and CTA for checkout.
@@ -34,12 +39,6 @@ Launch a production-ready restaurant ordering app in minutes.
 | Cart Sidebar                                         |
 | ---------------------------------------------------- |
 | ![Cart Sidebar](public/screenshots/cart-sidebar.png) |
-
----
-
-## Deploy with Vercel
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/craveup/leclerc-bakery-cravejs-nextjs-template&project-name=leclerc-bakery-storefront&repository-name=leclerc-bakery-storefront&env=NEXT_PUBLIC_CRAVEUP_API_KEY,NEXT_PUBLIC_LOCATION_ID,NEXT_PUBLIC_GOOGLE_MAPS_API_KEY)
 
 ---
 
@@ -82,15 +81,13 @@ Start from the provided template:
 cp .env.example .env.local
 ```
 
-Replace the placeholders with your own credentials.
+Use only non-sensitive public values while studying the local UI. Do not add a
+Crave API key: this legacy application is not a supported live integration.
 
 | Key                               | Required | Description                                                     |
 | --------------------------------- | -------- | --------------------------------------------------------------- |
-| `NEXT_PUBLIC_CRAVEUP_API_KEY`     | ✅       | Public API key from the CraveUp dashboard.                      |
-| `NEXT_PUBLIC_LOCATION_ID`         | ✅       | Default location used for menus and cart operations.            |
-| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | ✅       | Enables Google Maps for address autocomplete + delivery radius. |
-
-Need sandbox access? Email [hello@craveup.com](mailto:hello@craveup.com).
+| `NEXT_PUBLIC_LOCATION_ID`         | No       | Optional fixture/location label for local UI study.             |
+| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | No       | Domain-restricted browser key for optional Maps UI only.        |
 
 ---
 
@@ -109,7 +106,7 @@ Need sandbox access? Email [hello@craveup.com](mailto:hello@craveup.com).
 
 1. **Branding** – Replace imagery in `public/images` and update color tokens in `src/app/globals.css`.
 2. **Copywriting** – Adjust hero, footer, story, and CTA text inside `src/app/components/`.
-3. **Menu Data** – Manage categories/products within the CraveUp dashboard; the template consumes the live API response for `NEXT_PUBLIC_LOCATION_ID`.
+3. **Menu Data** – Use the bundled mock fallback for local design study. Follow the current SDK guide for a new live integration.
 4. **UX Enhancements** – Extend cart behavior or product options by editing hooks/providers under `src/hooks` and `src/app/providers`.
 5. **Testing** – Run `pnpm lint` and `pnpm build` before shipping to catch regressions early.
 
@@ -130,13 +127,11 @@ README.md
 
 ---
 
-## Deployment on Vercel
+## Deployment status
 
-1. Push your changes to GitHub/GitLab/Bitbucket.
-2. Visit [vercel.com/new](https://vercel.com/new) and import the repository.
-3. Add the environment variables listed above in the project settings.
-4. Deploy—Vercel installs via `pnpm`, runs `pnpm build`, and serves the production bundle.
-5. Configure preview environments, analytics, and custom domains as needed.
+Do not deploy this legacy integration as a live ordering storefront. Reuse its
+visual ideas in a new application built against the current Storefront API and
+SDK contract instead.
 
 ---
 
